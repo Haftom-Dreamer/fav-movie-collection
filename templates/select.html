@@ -1,0 +1,72 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block styles %}
+  {{ super() }}
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #121212;
+      color: #f5f5f5;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 3rem auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-weight: 600;
+    }
+
+    .movie-item {
+      background-color: #1f1f1f;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.3s;
+    }
+
+    .movie-item:hover {
+      background-color: #2b2b2b;
+    }
+
+    .movie-item img {
+      width: 60px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-right: 1rem;
+    }
+
+    .movie-item a {
+      text-decoration: none;
+      color: #e50914;
+      font-weight: bold;
+    }
+
+    .movie-title {
+      font-size: 1.1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Select Movie</h1>
+  {% for movie in movies %}
+  <div class="movie-item">
+    <img src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }}">
+    <div>
+      <div class="movie-title">{{ movie.title }} ({{ movie.release_date.split('-')[0] }})</div>
+      <a href="{{ url_for('select', id=movie.id) }}">Select</a>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

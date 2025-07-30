@@ -1,0 +1,21 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+
+# MySQL configs (if you have them)
+*.cnf
+*.sql
+
+# Environment
+.env
+venv/
+env/
+*.db
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
