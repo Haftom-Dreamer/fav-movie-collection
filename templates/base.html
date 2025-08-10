@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Collection{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <a href="#" class="back-to-top-button" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="{{ url_for('landing') }}">My Collection</a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{{ url_for('landing') }}" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('landing') }}#how-it-works" class="nav-link">How It Works</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('collection') }}" class="nav-link">My Collection</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('add') }}" class="nav-link cta-button">+ Add Movie</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-about">
+                <h3 class="footer-logo">My Collection</h3>
+                <p>Your personal space to track, rate, and discover your next favorite movie or book.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('landing') }}">Home</a></li>
+                    <li><a href="{{ url_for('collection') }}">My Collection</a></li>
+                    <li><a href="{{ url_for('add') }}">Add Movie</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <h4>Follow Us</h4>
+                <div class="social-media">
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 My Collection. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+</body>
+</html>

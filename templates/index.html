@@ -1,235 +1,115 @@
-{% extends 'bootstrap/base.html' %}
-{% block styles %}
-  {{ super() }}
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: #bba8a8;
-      color: #f5f5f5;
-    }
-
-    .navbar {
-      background-color: #1f1f1f;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .navbar h1 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-
-    .navbar a {
-      text-decoration: none;
-      background-color: #e50914;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 5px;
-      font-weight: bold;
-      transition: background-color 0.3s;
-    }
-
-    .navbar a:hover {
-      background-color: #b00710
-    }
-
-   .movie-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* wider cards */
-  gap: 28px;
-  padding: 2rem;
-}
-
-.movie-card {
-  background-color: transparent;
-  border-radius: 10px;
-  perspective: 1000px;
-  height: 460px;           /* Increased height */
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0 auto;
-  transition: transform 0.2s cubic-bezier(.4,2,.6,1);
-}
-
-.movie-card:hover {
-  transform: scale(1.04) translateY(-8px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  z-index: 2;
-}
-
-    .flip-card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-
-    .flip-card-inner.flipped {
-      transform: rotateY(180deg);
-    }
-
-    .flip-card-front, .flip-card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  background-color: #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.flip-card-front img {
-  width: 100%;
-  height: 360px;           /* Bigger image */
-  object-fit: cover;       /* Ensures the poster fits perfectly */
-  border-bottom: 1px solid #232323;
-}
-
-.flip-card-front .card-content,
-.flip-card-back .card-content {
-  padding: 1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 0.6rem;
-  width: 100%;
-  min-height: 100px;
-}
-
-
-    /* .flip-card-front {
-      z-index: 2;
-    } */
-
-    .flip-card-back {
-  background-color: #232323;
-  color: #fff;
-  transform: rotateY(180deg);
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-
-    /* .flip-card-back .btn-group {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
-} */
-
-.flip-card-back .card-content {
-  height: 100%;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;   /* Center content vertically */
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.2rem 1.1rem;
-  box-sizing: border-box;
-}
-
-.flip-card-back .review,
-.flip-card-back .description {
-  font-size: 1.2rem;
-  color: #fff;
-  background: #181818;
-  padding: 0.5rem 0.7rem;
-  border-radius: 6px;
-  width: 100%;
-  word-break: break-word;
-  margin-bottom: 0.4rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-    .movie-card .title {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    .movie-card .rating {
-      color: gold;
-      font-weight: 500;
-      margin: 0.3rem 0;
-    }
-
-    .movie-card .review {
-      font-size: 0.9rem;
-      color: #ccc;
-    }
-
-    .btn-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  justify-content: flex-start;
-}
-    .btn-group a, .btn-group button {
-  margin: 0;
-  min-width: 70px;
-  font-size: 0.95rem;
-  white-space: nowrap;
-}
-.btn-secondary {
-  background-color: #fff !important;
-  color: #232323 !important;
-  border: none;
-}
-  </style>
-{% endblock %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="navbar">
-  <h1 style="font-size: 2.5rem;">🎬 My Movie Collection</h1>
-  <a href="{{ url_for('add') }}">+ Add Movie</a>
-</div>
+<div class="fullwidth-content">
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="welcome-title">Your Ultimate Media Tracker</h1>
+            <p class="welcome-subtitle">Discover, track, and rate your favorite movies and books.</p>
+            <div class="hero-cards-container">
+                <a href="{{ url_for('collection') }}" class="hero-card">
+                    <div class="card-image-stack">
+                        <img src="{{ url_for('static', filename='img/movies/DIGITAL ART - GODFATHER - prathool nt.jpeg') }}" class="stack-img-1">
+                        <img src="{{ url_for('static', filename='img/movies/download (1).jpeg') }}" class="stack-img-2">
+                        <img src="{{ url_for('static', filename='img/movies/DUNE MOVIE POSTER 1 Sided ORIGINAL Mini Sheet 11_5 x 17 TIMOTHEE CHALAMET ZENDAYA.jpeg') }}" class="stack-img-3">
+                    </div>
+                    <div class="hero-card-overlay"><div class="explore-button">View Collection</div></div>
+                </a>
+                <a href="#" class="hero-card">
+                    <div class="card-image-stack">
+                        <img src="{{ url_for('static', filename='img/books/The Cover Artist.jpeg') }}" class="stack-img-1">
+                        <img src="{{ url_for('static', filename='img/books/How.jpeg') }}" class="stack-img-2">
+                        <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}" class="stack-img-3">
+                    </div>
+                    <div class="hero-card-overlay"><div class="explore-button">Explore Books</div></div>
+                </a>
+            </div>
+        </div>
+        <a href="#showcase" class="scroll-indicator"><i class="fas fa-chevron-down"></i></a>
+    </section>
 
-<div class="movie-grid">
-  {% for movie in movies %}
-  <div class="movie-card">
-    <div class="flip-card-inner" id="flip-{{ movie.id }}">
-      <div class="flip-card-front">
-        <img src="{{ movie.img_url }}" alt="{{ movie.title }}">
-        <div class="card-content">
-          <div class="title">{{ movie.title }} ({{ movie.year }})</div>
-          <div class="rating">⭐ {{ movie.rating }}</div>
-          <div class="btn-group">
-            <a href="{{ url_for('edit', movie_id=movie.id) }}" class="btn btn-sm btn-light">Edit</a>
-            <a href="{{ url_for('delete', movie_id=movie.id) }}" class="btn btn-sm btn-danger">Delete</a>
-            <button class="btn btn-sm btn-info" onclick="flipCard({{ movie.id }})">Details</button>
-          </div>
+    <div id="showcase" class="showcase-section">
+        <div class="marquee">
+            <div class="marquee-content">
+                <img src="{{ url_for('static', filename='img/movies/Game of Thrones.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/Superman Poster!.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/download (3).jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/Marvel VENOM 11_ x 17_ Collector\'s Movie Poster ( T6 ) _ eBay.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/Game of Thrones.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/Superman Poster!.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/download (3).jpeg') }}">
+                <img src="{{ url_for('static', filename='img/movies/Marvel VENOM 11_ x 17_ Collector\'s Movie Poster ( T6 ) _ eBay.jpeg') }}">
+            </div>
         </div>
-      </div>
-      <div class="flip-card-back">
-        <div class="card-content">
-          <div class="title">{{ movie.title }} ({{ movie.year }})</div>
-          <div class="review"><strong>Review:</strong> {{ movie.review }}</div>
-          <div class="description"><strong>Description:</strong> {{ movie.description }}</div>
-          <button class="btn btn-sm btn-secondary" onclick="flipCard({{ movie.id }})">Back</button>
+        <div class="marquee">
+            <div class="marquee-content scroll-reverse">
+                <img src="{{ url_for('static', filename='img/books/Create a minimalist fantasy book cover _ Book cover contest.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/Design a professional and beautiful book cover _ Book cover contest.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/download (4).jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/Create a minimalist fantasy book cover _ Book cover contest.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/Design a professional and beautiful book cover _ Book cover contest.jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/download (4).jpeg') }}">
+                <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}">
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-  {% endfor %}
-</div>
 
-<script>
-function flipCard(id) {
-  const cardInner = document.getElementById('flip-' + id);
-  cardInner.classList.toggle('flipped');
-}
-</script>
+    <section id="how-it-works" class="info-section hidden">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps-container">
+            <div class="step-card"><div class="step-icon"><i class="fas fa-search"></i></div><h3>1. Discover</h3><p>Use the 'Add Movie' feature to search for any film and add it to your collection.</p></div>
+            <div class="step-card"><div class="step-icon"><i class="fas fa-edit"></i></div><h3>2. Rate & Review</h3><p>Once a movie is added, you can edit it to add your personal rating and review.</p></div>
+            <div class="step-card"><div class="step-icon"><i class="fas fa-star"></i></div><h3>3. Build Your Collection</h3><p>See all your rated movies in one place, creating a library of your film journey.</p></div>
+        </div>
+    </section>
+    
+    <section class="featured-section hidden">
+        <div class="featured-container">
+            <div class="featured-image">
+                 <img src="{{ url_for('static', filename='img/movies/download (2).jpeg') }}" alt="Featured Movie Poster">
+            </div>
+            <div class="featured-content" style="text-align: left;">
+                <h2 class="section-title">Movie of the Week</h2>
+                <h3>Titanic</h3>
+                <p class="featured-description">A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.</p>
+                <div class="rating">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                </div>
+                <a href="{{ url_for('collection') }}" class="cta-button nav-link">Explore More</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials-section hidden">
+        <div class="testimonials-container">
+            <h2 class="section-title">What Our Users Say</h2>
+            <div class="testimonial-cards">
+                <div class="testimonial-card">
+                    <p class="testimonial-quote">"Finally, a perfect place to keep track of my endless watchlist. The interface is clean and so easy to use!"</p>
+                    <span class="testimonial-author">- Alex R.</span>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-quote">"I love being able to rate everything I've read and see my reading history all in one spot. A must-have for book lovers."</p>
+                    <span class="testimonial-author">- Jordan M.</span>
+                </div>
+                <div class="testimonial-card">
+                    <p class="testimonial-quote">"The discovery feature is amazing. I've found so many hidden gems, both movies and books, thanks to this site."</p>
+                    <span class="testimonial-author">- Sam K.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section hidden">
+        <div class="cta-container">
+            <h2>Ready to Explore?</h2>
+            <p>Find your next adventure. Dive into our curated collections of movies and books.</p>
+            <div class="cta-buttons-container">
+                <a href="{{ url_for('collection') }}" class="cta-button-large"><i class="fas fa-film"></i> My Collection</a>
+                <a href="#" class="cta-button-large"><i class="fas fa-book-open"></i> Explore Books</a>
+            </div>
+        </div>
+    </section>
+</div>
 {% endblock %}
