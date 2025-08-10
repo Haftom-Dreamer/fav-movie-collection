@@ -45,9 +45,13 @@ with app.app_context():
     
 
 @app.route("/")
-def home():
+def landing():
+    return render_template("index.html")
+
+@app.route("/collection")
+def collection():
     movies = db.session.query(Movie).order_by(Movie.ranking).all()
-    return render_template("index.html", movies=movies)
+    return render_template("movie.html", movies=movies)
 
 @app.route("/add", methods=["GET", "POST"])
 def add():
@@ -77,13 +81,12 @@ def edit(movie_id):
         movie.rating = float(form.rating.data)
         movie.review = form.review.data
         db.session.commit()
-        return redirect(url_for('home'))
+        return redirect(url_for('collection'))
 
     # Pre-fill form with current movie data
     form.rating.data = str(movie.rating)
     form.review.data = movie.review
     return render_template("edit.html", movie=movie, form=form)
-
 
 @app.route("/delete/<int:movie_id>")
 def delete(movie_id):
@@ -91,7 +94,7 @@ def delete(movie_id):
     if movie:
         db.session.delete(movie)
         db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for('collection'))
 
 def movie(title):
     url = "https://api.themoviedb.org/3/search/movie"

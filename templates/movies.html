@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}My Movie Collection{% endblock %}
+
+{% block content %}
+<h1 class="page-heading">My Collection</h1>
+<div class="movie-grid">
+  {% for movie in movies %}
+  <div class="movie-card">
+    <div class="flip-card-inner" id="flip-{{ movie.id }}">
+      
+      <div class="flip-card-front">
+        <img src="{{ movie.img_url }}" alt="{{ movie.title }} Poster">
+        <div class="card-content">
+          <div class="title">{{ movie.title }}</div>
+          <div class="rating">⭐ {{ movie.rating }}/10</div>
+        </div>
+      </div>
+      
+      <div class="flip-card-back">
+          <div class="title">{{ movie.title }} ({{ movie.year }})</div>
+          <p class="review"><strong>My Review:</strong> {{ movie.review if movie.review else 'Not reviewed yet.' }}</p>
+          <p class="description"><strong>Synopsis:</strong> {{ movie.description }}</p>
+          <div class="btn-group">
+            <a href="{{ url_for('edit', movie_id=movie.id) }}" class="nav-link">Edit</a>
+            <a href="{{ url_for('delete', movie_id=movie.id) }}" class="nav-link cta-button">Delete</a>
+            <button class="nav-link" onclick="flipCard({{ movie.id }})">Back</button>
+          </div>
+      </div>
+
+    </div>
+  </div>
+  <script>
+    // Add event listener to flip card on details click
+    document.querySelector('#flip-{{ movie.id }}').previousElementSibling.querySelector('.btn-details').addEventListener('click', function() {
+        flipCard({{ movie.id }});
+    });
+  </script>
+  {% endfor %}
+</div>
+
+<script>
+function flipCard(id) {
+  const cardInner = document.getElementById('flip-' + id);
+  cardInner.classList.toggle('flipped');
+}
+</script>
+{% endblock %}
