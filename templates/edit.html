@@ -1,21 +1,70 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}Edit Movie{% endblock %}
+{% block title %}Edit {{ item_type | default('Movie') }}{% endblock %}
 
 {% block content %}
-<div class="form-container">
-  <h1>Edit {{ movie.title }}</h1>
-  <form method="POST" novalidate>
-    {{ form.hidden_tag() }}
-    
-    {{ form.rating.label(class="form-label") }}
-    {{ form.rating(class="form-control", placeholder="e.g. 7.5") }}
-    
-    {{ form.review.label(class="form-label") }}
-    {{ form.review(class="form-control", placeholder="e.g. A masterpiece!") }}
-    
-    {{ form.submit(class="btn-submit") }}
-  </form>
+<div class="page-container narrow">
+    <div class="form-page-header">
+        <h1 class="page-title">
+            <i class="fas fa-pen" style="color:var(--accent)"></i>
+            Edit "{{ item.title }}"
+        </h1>
+        <p class="page-subtitle">Rate, review, and set your status.</p>
+    </div>
+    <div class="form-card edit-form-card">
+        {% if item.img_url %}
+        <div class="edit-poster-wrap">
+            <img src="{{ item.img_url }}" alt="{{ item.title }}" class="edit-poster">
+        </div>
+        {% endif %}
+        <form method="POST" novalidate class="styled-form">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label class="form-label">{{ form.status.label.text }}</label>
+                {{ form.status(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.rating.label.text }}</label>
+                <div class="rating-input-wrap">
+                    {{ form.rating(class="form-control", placeholder="0.0 – 10.0") }}
+                    <span class="rating-suffix">/ 10</span>
+                </div>
+                <div class="star-visual" id="star-visual">
+                    {% for i in range(1, 11) %}
+                    <span class="star-dot" data-val="{{ i }}">★</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.review.label.text }}</label>
+                {{ form.review(class="form-control", placeholder="Share your thoughts...", rows=3, id="review-field", style="resize:vertical") }}
+            </div>
+            {{ form.submit(class="btn-primary full-width") }}
+        </form>
+        <a href="{{ url_for('collection') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Collection</a>
+    </div>
 </div>
+
+<script>
+// Highlight stars based on rating input
+const ratingInput = document.querySelector('input[name="rating"]');
+const stars = document.querySelectorAll('.star-dot');
+function updateStars(val) {
+    const v = parseFloat(val);
+    stars.forEach(s => {
+        s.classList.toggle('active', parseFloat(s.dataset.val) <= v);
+    });
+}
+if (ratingInput) {
+    updateStars(ratingInput.value);
+    ratingInput.addEventListener('input', e => updateStars(e.target.value));
+    stars.forEach(s => {
+        s.addEventListener('click', () => {
+            ratingInput.value = s.dataset.val;
+            updateStars(s.dataset.val);
+        });
+    });
+}
+</script>
 {% endblock %}

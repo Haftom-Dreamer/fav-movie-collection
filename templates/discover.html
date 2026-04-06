@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Discover{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="discover-header">
+        <h1 class="page-title"><i class="fas fa-compass" style="color:var(--accent)"></i> Discover</h1>
+        <p class="page-subtitle">Trending movies & popular books right now.</p>
+    </div>
+
+    <!-- Trending Movies -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-heading"><i class="fas fa-fire" style="color:#ff6b6b"></i> Trending Movies</h2>
+            <a href="{{ url_for('add') }}" class="section-link">Search Movie <i class="fas fa-search"></i></a>
+        </div>
+        <div class="discover-grid">
+            {% for movie in trending_movies %}
+            <div class="discover-card">
+                <div class="discover-poster">
+                    {% if movie.img_url %}
+                    <img src="{{ movie.img_url }}" alt="{{ movie.title }}">
+                    {% else %}
+                    <div class="img-placeholder"><i class="fas fa-film"></i></div>
+                    {% endif %}
+                    <div class="discover-overlay">
+                        <a href="{{ url_for('select', id=movie.tmdb_id) }}" class="btn-add-discover">
+                            <i class="fas fa-plus"></i> Add to Collection
+                        </a>
+                    </div>
+                    <div class="tmdb-rating">⭐ {{ movie.rating | round(1) }}</div>
+                </div>
+                <div class="discover-info">
+                    <div class="discover-title">{{ movie.title }}</div>
+                    <div class="discover-year">{{ movie.year }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Popular Books -->
+    <div class="dashboard-section" style="margin-top:3rem;">
+        <div class="section-header">
+            <h2 class="section-heading"><i class="fas fa-book-open" style="color:var(--accent-book)"></i> Popular Books</h2>
+            <a href="{{ url_for('add_book') }}" class="section-link">Search Book <i class="fas fa-search"></i></a>
+        </div>
+        <div class="discover-grid">
+            {% for book in trending_books %}
+            <div class="discover-card">
+                <div class="discover-poster">
+                    {% if book.img_url %}
+                    <img src="{{ book.img_url }}" alt="{{ book.title }}">
+                    {% else %}
+                    <div class="img-placeholder book"><i class="fas fa-book"></i></div>
+                    {% endif %}
+                    <div class="discover-overlay">
+                        <a href="{{ url_for('select_book', id=book.google_id) }}" class="btn-add-discover book">
+                            <i class="fas fa-plus"></i> Add to Collection
+                        </a>
+                    </div>
+                </div>
+                <div class="discover-info">
+                    <div class="discover-title">{{ book.title }}</div>
+                    <div class="discover-year">{{ book.author }}{% if book.year %} · {{ book.year }}{% endif %}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

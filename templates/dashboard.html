@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="dashboard-header">
+        <div>
+            <h1 class="page-title">Hi, <span style="color:var(--accent)">{{ current_user.username }}</span> 👋</h1>
+            <p class="page-subtitle">Here's your collection at a glance.</p>
+        </div>
+        <div class="dash-add-buttons">
+            <a href="{{ url_for('add') }}" class="btn-primary"><i class="fas fa-film"></i> Add Movie</a>
+            <a href="{{ url_for('add_book') }}" class="btn-secondary"><i class="fas fa-book"></i> Add Book</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+        <div class="stat-card watched">
+            <div class="stat-icon"><i class="fas fa-film"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ watched_count }}">0</div>
+                <div class="stat-label">Movies Watched</div>
+            </div>
+        </div>
+        <div class="stat-card to-watch">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ to_watch_count }}">0</div>
+                <div class="stat-label">To Watch</div>
+            </div>
+        </div>
+        <div class="stat-card read">
+            <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ read_count }}">0</div>
+                <div class="stat-label">Books Read</div>
+            </div>
+        </div>
+        <div class="stat-card to-read">
+            <div class="stat-icon"><i class="fas fa-bookmark"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ to_read_count }}">0</div>
+                <div class="stat-label">To Read</div>
+            </div>
+        </div>
+        <div class="stat-card monthly">
+            <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ movies_this_month }}">0</div>
+                <div class="stat-label">Movies This Month</div>
+            </div>
+        </div>
+        <div class="stat-card monthly-book">
+            <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ books_this_month }}">0</div>
+                <div class="stat-label">Books This Month</div>
+            </div>
+        </div>
+        <div class="stat-card rating-avg">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-body">
+                <div class="stat-number">{{ avg_movie_rating }}</div>
+                <div class="stat-label">Avg Movie Rating</div>
+            </div>
+        </div>
+        <div class="stat-card rating-avg-book">
+            <div class="stat-icon"><i class="fas fa-star-half-alt"></i></div>
+            <div class="stat-body">
+                <div class="stat-number">{{ avg_book_rating }}</div>
+                <div class="stat-label">Avg Book Rating</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-heading">Recent Activity</h2>
+            <a href="{{ url_for('collection') }}" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        {% if recent %}
+        <div class="recent-grid">
+            {% for entry in recent %}
+            <div class="recent-card">
+                <div class="recent-poster">
+                    {% if entry.item.img_url %}
+                    <img src="{{ entry.item.img_url }}" alt="{{ entry.item.title }}">
+                    {% else %}
+                    <div class="poster-placeholder"><i class="fas fa-{% if entry.type == 'movie' %}film{% else %}book{% endif %}"></i></div>
+                    {% endif %}
+                    <span class="type-badge {{ entry.type }}">{{ entry.type }}</span>
+                </div>
+                <div class="recent-info">
+                    <div class="recent-title">{{ entry.item.title }}</div>
+                    {% if entry.type == 'book' %}
+                    <div class="recent-sub">{{ entry.item.author }}</div>
+                    {% endif %}
+                    <div class="recent-meta">
+                        <span class="status-badge {{ entry.item.status }}">
+                            {% if entry.item.status in ['watched', 'read'] %}✅{% else %}🕐{% endif %}
+                            {{ entry.item.status | replace('_', ' ') | title }}
+                        </span>
+                        {% if entry.item.rating %}
+                        <span class="star-mini">⭐ {{ entry.item.rating }}/10</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-star" style="font-size:3rem; color:var(--accent); opacity:.4;"></i>
+            <h3>Your collection is empty</h3>
+            <p>Start by adding a movie or book!</p>
+            <div style="display:flex; gap:1rem; justify-content:center; margin-top:1rem;">
+                <a href="{{ url_for('add') }}" class="btn-primary"><i class="fas fa-film"></i> Add Movie</a>
+                <a href="{{ url_for('add_book') }}" class="btn-secondary"><i class="fas fa-book"></i> Add Book</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Links -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-heading">Explore</h2>
+        </div>
+        <div class="quick-links">
+            <a href="{{ url_for('discover') }}" class="quick-link-card">
+                <i class="fas fa-compass"></i>
+                <span>Discover Trending</span>
+                <small>Movies & books trending now</small>
+            </a>
+            <a href="{{ url_for('collection', tab='movies', status='to_watch') }}" class="quick-link-card">
+                <i class="fas fa-clock"></i>
+                <span>My Watchlist</span>
+                <small>{{ to_watch_count }} movie(s) waiting</small>
+            </a>
+            <a href="{{ url_for('collection', tab='books', status='to_read') }}" class="quick-link-card">
+                <i class="fas fa-bookmark"></i>
+                <span>My Reading List</span>
+                <small>{{ to_read_count }} book(s) to read</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Animated counters
+document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    if (target === 0) { el.textContent = '0'; return; }
+    let current = 0;
+    const step = Math.ceil(target / 30);
+    const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current;
+        if (current >= target) clearInterval(timer);
+    }, 40);
+});
+</script>
+{% endblock %}

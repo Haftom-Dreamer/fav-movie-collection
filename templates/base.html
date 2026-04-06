@@ -3,67 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}My Collection{% endblock %}</title>
+    <title>{% block title %}CineShelf{% endblock %} — CineShelf</title>
+    <meta name="description" content="Track your favorite movies and books in one beautiful place.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <a href="#" class="back-to-top-button" aria-label="Back to top">
-        <i class="fas fa-arrow-up"></i>
-    </a>
-
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <a href="{{ url_for('landing') }}">My Collection</a>
+            <a href="{{ url_for('landing') }}" class="nav-logo">
+                <span class="logo-icon">◈</span> CineShelf
+            </a>
+            <div class="nav-right">
+                {% if current_user.is_authenticated %}
+                <ul class="nav-menu">
+                    <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('collection') }}" class="nav-link {% if request.endpoint == 'collection' %}active{% endif %}"><i class="fas fa-layer-group"></i> Collection</a></li>
+                    <li><a href="{{ url_for('discover') }}" class="nav-link {% if request.endpoint == 'discover' %}active{% endif %}"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li class="nav-add-group">
+                        <a href="{{ url_for('add') }}" class="btn-nav-add movie"><i class="fas fa-film"></i> Film</a>
+                        <a href="{{ url_for('add_book') }}" class="btn-nav-add book"><i class="fas fa-book"></i> Book</a>
+                    </li>
+                </ul>
+                <div class="nav-avatar" title="{{ current_user.username }}" style="background:{{ current_user.avatar_color }};">
+                    {{ current_user.username[0].upper() }}
+                    <div class="avatar-dropdown">
+                        <span class="avatar-name">{{ current_user.username }}</span>
+                        <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                    </div>
+                </div>
+                {% else %}
+                <ul class="nav-menu">
+                    <li><a href="{{ url_for('login') }}" class="nav-link">Sign In</a></li>
+                    <li><a href="{{ url_for('register') }}" class="btn-primary-sm">Get Started</a></li>
+                </ul>
+                {% endif %}
             </div>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="{{ url_for('landing') }}" class="nav-link">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('landing') }}#how-it-works" class="nav-link">How It Works</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('collection') }}" class="nav-link">My Collection</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url_for('add') }}" class="nav-link cta-button">+ Add Movie</a>
-                </li>
-            </ul>
         </div>
     </nav>
 
-    {% block content %}{% endblock %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for cat, msg in messages %}
+            <div class="flash flash-{{ cat }}">
+                <i class="fas fa-{% if cat == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                {{ msg }}
+                <button onclick="this.parentElement.remove()" class="flash-close">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 
     <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-about">
-                <h3 class="footer-logo">My Collection</h3>
-                <p>Your personal space to track, rate, and discover your next favorite movie or book.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="{{ url_for('landing') }}">Home</a></li>
-                    <li><a href="{{ url_for('collection') }}">My Collection</a></li>
-                    <li><a href="{{ url_for('add') }}">Add Movie</a></li>
-                </ul>
-            </div>
-            <div class="footer-social">
-                <h4>Follow Us</h4>
-                <div class="social-media">
-                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 My Collection. All Rights Reserved.</p>
+        <div class="footer-inner">
+            <span class="nav-logo" style="font-size:1.2rem;">◈ CineShelf</span>
+            <p>Your personal universe of movies & books.</p>
+            <p style="color:#555; font-size:0.8rem; margin-top:8px;">© 2026 CineShelf</p>
         </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+    <script>
+    // Navbar scroll
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+    });
+    </script>
 </body>
 </html>

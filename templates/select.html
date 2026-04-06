@@ -1,19 +1,61 @@
 {% extends 'base.html' %}
 
-{% block title %}Select a Movie{% endblock %}
+{% block title %}Select a {{ item_type | default('Movie') }}{% endblock %}
 
 {% block content %}
-<h1 class="page-heading">Select a Movie</h1>
-<p>We found these results for your search. Click the one you want to add.</p>
-<div class="select-list">
-  {% for movie in movies %}
-    <a href="{{ url_for('select', id=movie.id) }}">
-      <img src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }} Poster">
-      <div>
-        <div class="title">{{ movie.title }}</div>
-        <span>{{ movie.release_date.split('-')[0] }}</span>
-      </div>
-    </a>
-  {% endfor %}
+<div class="page-container narrow">
+    <div class="form-page-header">
+        <h1 class="page-title">
+            <i class="fas fa-{% if item_type == 'Book' %}book{% else %}film{% endif %}" style="color:{% if item_type == 'Book' %}var(--accent-book){% else %}var(--accent){% endif %}"></i>
+            Select a {{ item_type | default('Movie') }}
+        </h1>
+        <p class="page-subtitle">Click the right one to add it to your collection.</p>
+    </div>
+
+    {% if items %}
+    <div class="select-list">
+        {% for item in items %}
+        {% if item_type == 'Book' %}
+        <a href="{{ url_for('select_book', id=item.id) }}" class="select-item">
+            <div class="select-thumb">
+                {% if item.thumb %}
+                <img src="{{ item.thumb }}" alt="{{ item.title }}">
+                {% else %}
+                <div class="thumb-placeholder"><i class="fas fa-book"></i></div>
+                {% endif %}
+            </div>
+            <div class="select-info">
+                <div class="select-title">{{ item.title }}</div>
+                <div class="select-sub">{{ item.release_date[:4] if item.release_date else 'Unknown year' }}</div>
+            </div>
+            <i class="fas fa-chevron-right select-arrow"></i>
+        </a>
+        {% else %}
+        <a href="{{ url_for('select', id=item.id) }}" class="select-item">
+            <div class="select-thumb">
+                {% if item.poster_path %}
+                <img src="https://image.tmdb.org/t/p/w92{{ item.poster_path }}" alt="{{ item.title }}">
+                {% else %}
+                <div class="thumb-placeholder"><i class="fas fa-film"></i></div>
+                {% endif %}
+            </div>
+            <div class="select-info">
+                <div class="select-title">{{ item.title }}</div>
+                <div class="select-sub">{{ item.release_date[:4] if item.release_date else 'Unknown year' }}</div>
+            </div>
+            <i class="fas fa-chevron-right select-arrow"></i>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-search" style="font-size:3rem;color:var(--accent);opacity:.4;"></i>
+        <h3>No results found</h3>
+        <p>Try a different title.</p>
+        <a href="{{ url_for('add_book' if item_type == 'Book' else 'add') }}" class="btn-primary" style="margin-top:1rem;">Try Again</a>
+    </div>
+    {% endif %}
+    <a href="{{ url_for('add_book' if item_type == 'Book' else 'add') }}" class="back-link" style="margin-top:2rem;"><i class="fas fa-arrow-left"></i> Back to Search</a>
 </div>
 {% endblock %}

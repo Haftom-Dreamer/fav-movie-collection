@@ -1,115 +1,92 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div class="fullwidth-content">
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1 class="welcome-title">Your Ultimate Media Tracker</h1>
-            <p class="welcome-subtitle">Discover, track, and rate your favorite movies and books.</p>
-            <div class="hero-cards-container">
-                <a href="{{ url_for('collection') }}" class="hero-card">
-                    <div class="card-image-stack">
-                        <img src="{{ url_for('static', filename='img/movies/DIGITAL ART - GODFATHER - prathool nt.jpeg') }}" class="stack-img-1">
-                        <img src="{{ url_for('static', filename='img/movies/download (1).jpeg') }}" class="stack-img-2">
-                        <img src="{{ url_for('static', filename='img/movies/DUNE MOVIE POSTER 1 Sided ORIGINAL Mini Sheet 11_5 x 17 TIMOTHEE CHALAMET ZENDAYA.jpeg') }}" class="stack-img-3">
-                    </div>
-                    <div class="hero-card-overlay"><div class="explore-button">View Collection</div></div>
-                </a>
-                <a href="#" class="hero-card">
-                    <div class="card-image-stack">
-                        <img src="{{ url_for('static', filename='img/books/The Cover Artist.jpeg') }}" class="stack-img-1">
-                        <img src="{{ url_for('static', filename='img/books/How.jpeg') }}" class="stack-img-2">
-                        <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}" class="stack-img-3">
-                    </div>
-                    <div class="hero-card-overlay"><div class="explore-button">Explore Books</div></div>
-                </a>
-            </div>
-        </div>
-        <a href="#showcase" class="scroll-indicator"><i class="fas fa-chevron-down"></i></a>
-    </section>
+{% block title %}CineShelf — Track Every Story{% endblock %}
 
-    <div id="showcase" class="showcase-section">
-        <div class="marquee">
-            <div class="marquee-content">
-                <img src="{{ url_for('static', filename='img/movies/Game of Thrones.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/Superman Poster!.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/download (3).jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/Marvel VENOM 11_ x 17_ Collector\'s Movie Poster ( T6 ) _ eBay.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/Game of Thrones.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/Superman Poster!.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/download (3).jpeg') }}">
-                <img src="{{ url_for('static', filename='img/movies/Marvel VENOM 11_ x 17_ Collector\'s Movie Poster ( T6 ) _ eBay.jpeg') }}">
-            </div>
-        </div>
-        <div class="marquee">
-            <div class="marquee-content scroll-reverse">
-                <img src="{{ url_for('static', filename='img/books/Create a minimalist fantasy book cover _ Book cover contest.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/Design a professional and beautiful book cover _ Book cover contest.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/download (4).jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/Create a minimalist fantasy book cover _ Book cover contest.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/Design a professional and beautiful book cover _ Book cover contest.jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/download (4).jpeg') }}">
-                <img src="{{ url_for('static', filename='img/books/Erich Brechbühl [Mixer] - The Photobook.jpeg') }}">
-            </div>
+{% block content %}
+<section class="landing-hero">
+    <div class="landing-hero-content">
+        <div class="hero-badge">🎬 Movies + 📚 Books in one place</div>
+        <h1 class="welcome-title">Track Every<br>Story You Love.</h1>
+        <p class="welcome-subtitle">Rate, review, and discover your next favorite movie or book — all in one beautiful collection.</p>
+        <div class="hero-cta-group">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="btn-hero-primary">Go to Dashboard <i class="fas fa-arrow-right"></i></a>
+            <a href="{{ url_for('discover') }}" class="btn-hero-secondary">Discover Trending</a>
+            {% else %}
+            <a href="{{ url_for('register') }}" class="btn-hero-primary">Get Started Free <i class="fas fa-arrow-right"></i></a>
+            <a href="{{ url_for('login') }}" class="btn-hero-secondary">Sign In</a>
+            {% endif %}
         </div>
     </div>
 
-    <section id="how-it-works" class="info-section hidden">
-        <h2 class="section-title">How It Works</h2>
-        <div class="steps-container">
-            <div class="step-card"><div class="step-icon"><i class="fas fa-search"></i></div><h3>1. Discover</h3><p>Use the 'Add Movie' feature to search for any film and add it to your collection.</p></div>
-            <div class="step-card"><div class="step-icon"><i class="fas fa-edit"></i></div><h3>2. Rate & Review</h3><p>Once a movie is added, you can edit it to add your personal rating and review.</p></div>
-            <div class="step-card"><div class="step-icon"><i class="fas fa-star"></i></div><h3>3. Build Your Collection</h3><p>See all your rated movies in one place, creating a library of your film journey.</p></div>
-        </div>
-    </section>
-    
-    <section class="featured-section hidden">
-        <div class="featured-container">
-            <div class="featured-image">
-                 <img src="{{ url_for('static', filename='img/movies/download (2).jpeg') }}" alt="Featured Movie Poster">
-            </div>
-            <div class="featured-content" style="text-align: left;">
-                <h2 class="section-title">Movie of the Week</h2>
-                <h3>Titanic</h3>
-                <p class="featured-description">A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.</p>
-                <div class="rating">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+    <div class="hero-visual">
+        <div class="floating-cards">
+            <div class="float-card fc1">
+                <div class="fc-icon">🎬</div>
+                <div class="fc-text">
+                    <span>Inception</span>
+                    <small>⭐ 9.2 · Sci-Fi</small>
                 </div>
-                <a href="{{ url_for('collection') }}" class="cta-button nav-link">Explore More</a>
+                <span class="fc-badge watched">Watched</span>
+            </div>
+            <div class="float-card fc2">
+                <div class="fc-icon">📚</div>
+                <div class="fc-text">
+                    <span>Dune</span>
+                    <small>⭐ 8.8 · Frank Herbert</small>
+                </div>
+                <span class="fc-badge read">Read</span>
+            </div>
+            <div class="float-card fc3">
+                <div class="fc-icon">🔍</div>
+                <div class="fc-text">
+                    <span>Trending Now</span>
+                    <small>Discover new titles</small>
+                </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="testimonials-section hidden">
-        <div class="testimonials-container">
-            <h2 class="section-title">What Our Users Say</h2>
-            <div class="testimonial-cards">
-                <div class="testimonial-card">
-                    <p class="testimonial-quote">"Finally, a perfect place to keep track of my endless watchlist. The interface is clean and so easy to use!"</p>
-                    <span class="testimonial-author">- Alex R.</span>
-                </div>
-                <div class="testimonial-card">
-                    <p class="testimonial-quote">"I love being able to rate everything I've read and see my reading history all in one spot. A must-have for book lovers."</p>
-                    <span class="testimonial-author">- Jordan M.</span>
-                </div>
-                <div class="testimonial-card">
-                    <p class="testimonial-quote">"The discovery feature is amazing. I've found so many hidden gems, both movies and books, thanks to this site."</p>
-                    <span class="testimonial-author">- Sam K.</span>
-                </div>
-            </div>
+<!-- Features -->
+<section class="landing-features">
+    <h2 class="landing-section-title">Everything you need to track your media.</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(108,99,255,0.12);color:#6c63ff;"><i class="fas fa-layer-group"></i></div>
+            <h3>Dual Library</h3>
+            <p>Track movies and books side by side. Switch between them instantly with a single click.</p>
         </div>
-    </section>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(245,200,66,0.12);color:#f5c842;"><i class="fas fa-star"></i></div>
+            <h3>Rate & Review</h3>
+            <p>Give every title a personal rating out of 10, and leave a note for your future self.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(67,184,156,0.12);color:#43b89c;"><i class="fas fa-chart-bar"></i></div>
+            <h3>Activity Dashboard</h3>
+            <p>See your stats at a glance — how many watched, read, and your monthly progress.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(255,107,107,0.12);color:#ff6b6b;"><i class="fas fa-compass"></i></div>
+            <h3>Discover</h3>
+            <p>Browse trending movies from TMDB and popular books — add them to your list in one click.</p>
+        </div>
+    </div>
+</section>
 
-    <section class="cta-section hidden">
-        <div class="cta-container">
-            <h2>Ready to Explore?</h2>
-            <p>Find your next adventure. Dive into our curated collections of movies and books.</p>
-            <div class="cta-buttons-container">
-                <a href="{{ url_for('collection') }}" class="cta-button-large"><i class="fas fa-film"></i> My Collection</a>
-                <a href="#" class="cta-button-large"><i class="fas fa-book-open"></i> Explore Books</a>
-            </div>
-        </div>
-    </section>
-</div>
+<!-- CTA -->
+<section class="landing-cta">
+    <h2>Start your collection today.</h2>
+    <p>It's free. No credit card needed.</p>
+    {% if not current_user.is_authenticated %}
+    <a href="{{ url_for('register') }}" class="btn-hero-primary" style="margin-top:1.5rem; font-size:1rem; padding: 0.85rem 2rem;">
+        <i class="fas fa-user-plus"></i> Create Free Account
+    </a>
+    {% else %}
+    <a href="{{ url_for('dashboard') }}" class="btn-hero-primary" style="margin-top:1.5rem; font-size:1rem; padding: 0.85rem 2rem;">
+        <i class="fas fa-th-large"></i> Go to Dashboard
+    </a>
+    {% endif %}
+</section>
 {% endblock %}
