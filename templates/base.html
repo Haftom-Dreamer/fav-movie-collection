@@ -34,15 +34,38 @@
                         <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Log Out</a>
                     </div>
                 </div>
+                <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
                 {% else %}
                 <ul class="nav-menu">
                     <li><a href="{{ url_for('login') }}" class="nav-link">Sign In</a></li>
                     <li><a href="{{ url_for('register') }}" class="btn-primary-sm">Get Started</a></li>
                 </ul>
+                <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
                 {% endif %}
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu" id="mobileMenu">
+        <button class="mobile-menu-close" onclick="document.getElementById('mobileMenu').classList.remove('open')"><i class="fas fa-times"></i></button>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}" onclick="document.getElementById('mobileMenu').classList.remove('open')"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="{{ url_for('collection') }}" onclick="document.getElementById('mobileMenu').classList.remove('open')"><i class="fas fa-layer-group"></i> Collection</a>
+        <a href="{{ url_for('discover') }}" onclick="document.getElementById('mobileMenu').classList.remove('open')"><i class="fas fa-compass"></i> Discover</a>
+        <a href="{{ url_for('add') }}" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--accent)"><i class="fas fa-film"></i> Add Movie</a>
+        <a href="{{ url_for('add_book') }}" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--accent-book)"><i class="fas fa-book"></i> Add Book</a>
+        <a href="{{ url_for('logout') }}" style="color:var(--text-muted); font-size:1rem;"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+        {% else %}
+        <a href="{{ url_for('login') }}">Sign In</a>
+        <a href="{{ url_for('register') }}" style="color:var(--accent)">Get Started</a>
+        {% endif %}
+    </div>
+
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

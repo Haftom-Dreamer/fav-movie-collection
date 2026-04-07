@@ -10,7 +10,7 @@
             <i class="fas fa-pen" style="color:var(--accent)"></i>
             Edit "{{ item.title }}"
         </h1>
-        <p class="page-subtitle">Rate, review, and set your status.</p>
+        <p class="page-subtitle">Update status, rating, and your personal review.</p>
     </div>
     <div class="form-card edit-form-card">
         {% if item.img_url %}
@@ -21,13 +21,18 @@
         <form method="POST" novalidate class="styled-form">
             {{ form.hidden_tag() }}
             <div class="form-group">
+                <label class="form-label">{{ form.title.label.text }}</label>
+                {{ form.title(class="form-control") }}
+                {% if form.title.errors %}<span class="field-error">{{ form.title.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="form-group">
                 <label class="form-label">{{ form.status.label.text }}</label>
                 {{ form.status(class="form-control") }}
             </div>
             <div class="form-group">
                 <label class="form-label">{{ form.rating.label.text }}</label>
                 <div class="rating-input-wrap">
-                    {{ form.rating(class="form-control", placeholder="0.0 – 10.0") }}
+                    {{ form.rating(class="form-control", placeholder="0.0 – 10.0", id="ratingInput") }}
                     <span class="rating-suffix">/ 10</span>
                 </div>
                 <div class="star-visual" id="star-visual">
@@ -38,7 +43,11 @@
             </div>
             <div class="form-group">
                 <label class="form-label">{{ form.review.label.text }}</label>
-                {{ form.review(class="form-control", placeholder="Share your thoughts...", rows=3, id="review-field", style="resize:vertical") }}
+                {{ form.review(class="form-control", placeholder="Share your thoughts...", rows=3, style="resize:vertical") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.description.label.text }}</label>
+                {{ form.description(class="form-control", placeholder="Synopsis / description...", rows=4, style="resize:vertical") }}
             </div>
             {{ form.submit(class="btn-primary full-width") }}
         </form>
@@ -47,24 +56,19 @@
 </div>
 
 <script>
-// Highlight stars based on rating input
-const ratingInput = document.querySelector('input[name="rating"]');
+const ratingInput = document.getElementById('ratingInput');
 const stars = document.querySelectorAll('.star-dot');
 function updateStars(val) {
     const v = parseFloat(val);
-    stars.forEach(s => {
-        s.classList.toggle('active', parseFloat(s.dataset.val) <= v);
-    });
+    stars.forEach(s => s.classList.toggle('active', parseFloat(s.dataset.val) <= v));
 }
 if (ratingInput) {
     updateStars(ratingInput.value);
     ratingInput.addEventListener('input', e => updateStars(e.target.value));
-    stars.forEach(s => {
-        s.addEventListener('click', () => {
-            ratingInput.value = s.dataset.val;
-            updateStars(s.dataset.val);
-        });
-    });
+    stars.forEach(s => s.addEventListener('click', () => {
+        ratingInput.value = s.dataset.val;
+        updateStars(s.dataset.val);
+    }));
 }
 </script>
 {% endblock %}

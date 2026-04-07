@@ -1,34 +1,33 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from wtforms import StringField, SubmitField, PasswordField, SelectField
+from wtforms import StringField, SubmitField, PasswordField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, EqualTo
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from collections import Counter, defaultdict
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, Date
 
 TMDB_API_KEY = "f319b185cd1af98f98b55a81304dfe9b"
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7Y0sKR6b'
 Bootstrap(app)
 db_path = os.path.abspath("favorite-movies.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# --- DB Setup ---
 class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
-# --- Login Manager ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -38,11 +37,11 @@ login_manager.login_message = "Please log in to access this page."
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+AVATAR_COLORS = ["#6c63ff", "#ff6584", "#43b89c", "#f5a623", "#4ecdc4", "#c56ef3"]
+
 # =====================
 # --- DB Models ---
 # =====================
-
-AVATAR_COLORS = ["#6c63ff", "#ff6584", "#43b89c", "#f5a623", "#4ecdc4", "#c56ef3"]
 
 class User(UserMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -64,7 +63,7 @@ class Movie(db.Model):
     description: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
     review: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     img_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="to_watch")  # "watched" | "to_watch"
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="to_watch")
     genre: Mapped[str] = mapped_column(String(200), nullable=True, default="")
     date_added: Mapped[date] = mapped_column(Date, default=date.today)
     date_watched: Mapped[date] = mapped_column(Date, nullable=True)
@@ -81,12 +80,11 @@ class Book(db.Model):
     description: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
     review: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     img_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="to_read")  # "read" | "to_read"
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="to_read")
     genre: Mapped[str] = mapped_column(String(200), nullable=True, default="")
     date_added: Mapped[date] = mapped_column(Date, default=date.today)
     date_read: Mapped[date] = mapped_column(Date, nullable=True)
     owner: Mapped["User"] = relationship("User", back_populates="books")
-
 
 with app.app_context():
     db.create_all()
@@ -172,17 +170,69 @@ def dashboard():
     books = Book.query.filter_by(user_id=current_user.id).all()
     watched = [m for m in movies if m.status == "watched"]
     to_watch = [m for m in movies if m.status == "to_watch"]
-    read = [b for b in books if b.status == "read"]
+    read_books = [b for b in books if b.status == "read"]
     to_read = [b for b in books if b.status == "to_read"]
 
-    # Monthly stats (current month)
     today = date.today()
+
+    # --- Monthly stats (current month) ---
     movies_this_month = [m for m in watched if m.date_watched and
                          m.date_watched.month == today.month and m.date_watched.year == today.year]
-    books_this_month = [b for b in read if b.date_read and
+    books_this_month = [b for b in read_books if b.date_read and
                         b.date_read.month == today.month and b.date_read.year == today.year]
 
-    # Recent activity (last 5 items combined, sorted by date_added)
+    # --- Weekly activity (last 7 days) ---
+    week_labels = []
+    week_movies = []
+    week_books = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        week_labels.append(d.strftime("%a"))
+        week_movies.append(sum(1 for m in watched if m.date_watched == d))
+        week_books.append(sum(1 for b in read_books if b.date_read == d))
+
+    # --- Monthly chart (this year) ---
+    month_labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    month_movies = [0]*12
+    month_books = [0]*12
+    for m in watched:
+        if m.date_watched and m.date_watched.year == today.year:
+            month_movies[m.date_watched.month - 1] += 1
+    for b in read_books:
+        if b.date_read and b.date_read.year == today.year:
+            month_books[b.date_read.month - 1] += 1
+
+    # --- Genre breakdown ---
+    genre_counts = Counter()
+    for m in watched:
+        if m.genre:
+            for g in m.genre.split(","):
+                genre_counts[g.strip()] += 1
+    for b in read_books:
+        if b.genre:
+            for g in b.genre.split(","):
+                genre_counts[g.strip()] += 1
+    top_genres = genre_counts.most_common(6)
+
+    # --- Streak (consecutive days with activity) ---
+    activity_dates = set()
+    for m in watched:
+        if m.date_watched:
+            activity_dates.add(m.date_watched)
+    for b in read_books:
+        if b.date_read:
+            activity_dates.add(b.date_read)
+    streak = 0
+    check_date = today
+    while check_date in activity_dates:
+        streak += 1
+        check_date -= timedelta(days=1)
+
+    # --- Completion rate ---
+    total_movies = len(movies)
+    completion_pct = round(len(watched) / total_movies * 100) if total_movies else 0
+
+    # --- Recent activity ---
     all_items = []
     for m in movies:
         all_items.append({"type": "movie", "item": m, "date": m.date_added})
@@ -191,16 +241,30 @@ def dashboard():
     all_items.sort(key=lambda x: x["date"] or date.min, reverse=True)
     recent = all_items[:6]
 
+    week_max = max((week_movies[i] + week_books[i] for i in range(7)), default=0) or 1
+    month_max = max((month_movies[i] + month_books[i] for i in range(12)), default=0) or 1
+
     return render_template("dashboard.html",
         watched_count=len(watched),
         to_watch_count=len(to_watch),
-        read_count=len(read),
+        read_count=len(read_books),
         to_read_count=len(to_read),
         movies_this_month=len(movies_this_month),
         books_this_month=len(books_this_month),
         recent=recent,
         avg_movie_rating=round(sum(m.rating for m in watched if m.rating) / max(len(watched), 1), 1),
-        avg_book_rating=round(sum(b.rating for b in read if b.rating) / max(len(read), 1), 1),
+        avg_book_rating=round(sum(b.rating for b in read_books if b.rating) / max(len(read_books), 1), 1),
+        week_labels=week_labels,
+        week_movies=week_movies,
+        week_books=week_books,
+        week_max=week_max,
+        month_labels=month_labels,
+        month_movies=month_movies,
+        month_books=month_books,
+        month_max=month_max,
+        top_genres=top_genres,
+        streak=streak,
+        completion_pct=completion_pct,
     )
 
 
@@ -209,73 +273,272 @@ def dashboard():
 def collection():
     tab = request.args.get("tab", "movies")
     status = request.args.get("status", "all")
-    
+    sort = request.args.get("sort", "newest")
+
     movie_q = Movie.query.filter_by(user_id=current_user.id)
     book_q = Book.query.filter_by(user_id=current_user.id)
-    
+
     if status == "watched":
         movie_q = movie_q.filter_by(status="watched")
     elif status == "to_watch":
         movie_q = movie_q.filter_by(status="to_watch")
-
     if status == "read":
         book_q = book_q.filter_by(status="read")
     elif status == "to_read":
         book_q = book_q.filter_by(status="to_read")
-    
-    movies = movie_q.order_by(Movie.date_added.desc()).all()
-    books = book_q.order_by(Book.date_added.desc()).all()
-    return render_template("collection.html", movies=movies, books=books, tab=tab, status=status)
+
+    if sort == "rating":
+        movie_q = movie_q.order_by(Movie.rating.desc())
+        book_q = book_q.order_by(Book.rating.desc())
+    elif sort == "title":
+        movie_q = movie_q.order_by(Movie.title)
+        book_q = book_q.order_by(Book.title)
+    else:  # newest
+        movie_q = movie_q.order_by(Movie.date_added.desc())
+        book_q = book_q.order_by(Book.date_added.desc())
+
+    movies = movie_q.all()
+    books = book_q.all()
+    return render_template("collection.html", movies=movies, books=books,
+                           tab=tab, status=status, sort=sort)
+
+
+# =====================
+# --- Discover (Personalized + Filtered) ---
+# =====================
+
+def _get_user_collection_ids():
+    movie_tmdb_ids = {m.tmdb_id for m in Movie.query.filter_by(user_id=current_user.id).all() if m.tmdb_id}
+    book_google_ids = {b.google_id for b in Book.query.filter_by(user_id=current_user.id).all() if b.google_id}
+    return movie_tmdb_ids, book_google_ids
 
 
 @app.route("/discover")
 @login_required
 def discover():
-    # TMDB Trending Movies
-    trending_movies = []
+    movie_in_collection, book_in_collection = _get_user_collection_ids()
+
+    # -- Personalized movie recommendations --
+    user_movies = Movie.query.filter_by(user_id=current_user.id, status="watched").all()
+    genre_ids = set()
+    for m in user_movies:
+        if m.tmdb_id:
+            try:
+                r = requests.get(f"https://api.themoviedb.org/3/movie/{m.tmdb_id}",
+                                 params={"api_key": TMDB_API_KEY}, timeout=4)
+                for g in r.json().get("genres", []):
+                    genre_ids.add(str(g["id"]))
+                if len(genre_ids) >= 4:
+                    break
+            except Exception:
+                pass
+
+    recommended_movies = []
+    is_personalized_movies = bool(genre_ids)
     try:
-        r = requests.get(
-            "https://api.themoviedb.org/3/trending/movie/week",
-            params={"api_key": TMDB_API_KEY}
-        )
-        data = r.json()
-        for item in data.get("results", [])[:12]:
-            trending_movies.append({
-                "tmdb_id": item["id"],
-                "title": item.get("title", "Unknown"),
-                "year": (item.get("release_date") or "")[:4],
-                "img_url": f"https://image.tmdb.org/t/p/w300{item.get('poster_path', '')}",
-                "rating": item.get("vote_average", 0),
-                "overview": item.get("overview", "")[:200],
-            })
+        params = {"api_key": TMDB_API_KEY, "sort_by": "popularity.desc", "page": 1}
+        if genre_ids:
+            params["with_genres"] = ",".join(list(genre_ids)[:3])
+        r = requests.get("https://api.themoviedb.org/3/discover/movie", params=params, timeout=6)
+        for item in r.json().get("results", [])[:16]:
+            tid = str(item["id"])
+            if tid in movie_in_collection:
+                continue
+            if item.get("poster_path"):
+                recommended_movies.append({
+                    "tmdb_id": tid,
+                    "title": item.get("title", ""),
+                    "year": (item.get("release_date") or "")[:4],
+                    "img_url": f"https://image.tmdb.org/t/p/w300{item['poster_path']}",
+                    "rating": round(item.get("vote_average", 0), 1),
+                    "overview": (item.get("overview") or "")[:200],
+                })
+            if len(recommended_movies) >= 12:
+                break
     except Exception:
         pass
 
-    # Google Books "bestsellers" / popular
-    trending_books = []
+    # -- Personalized book recommendations --
+    user_books = Book.query.filter_by(user_id=current_user.id, status="read").all()
+    book_subjects = []
+    for b in user_books:
+        if b.genre:
+            book_subjects += [g.strip().lower() for g in b.genre.split(",") if g.strip()]
+    book_query = "+".join(book_subjects[:2]) if book_subjects else "bestsellers fiction"
+    is_personalized_books = bool(book_subjects)
+
+    recommended_books = []
     try:
-        r = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={"q": "subject:fiction&orderBy=relevance", "maxResults": 12, "printType": "books"}
-        )
-        data = r.json()
-        for item in data.get("items", []):
+        r = requests.get("https://www.googleapis.com/books/v1/volumes",
+                         params={"q": f"subject:{book_query}", "maxResults": 16,
+                                 "orderBy": "relevance", "printType": "books"}, timeout=6)
+        for item in r.json().get("items", []):
+            gid = item.get("id")
+            if gid in book_in_collection:
+                continue
             vol = item.get("volumeInfo", {})
             thumb = ""
             if "imageLinks" in vol:
                 thumb = vol["imageLinks"].get("thumbnail", "").replace("http://", "https://")
-            trending_books.append({
-                "google_id": item.get("id"),
-                "title": vol.get("title", "Unknown"),
+            if not thumb:
+                continue
+            recommended_books.append({
+                "google_id": gid,
+                "title": vol.get("title", ""),
                 "author": ", ".join(vol.get("authors", ["Unknown"])),
                 "year": (vol.get("publishedDate") or "")[:4],
                 "img_url": thumb,
-                "overview": vol.get("description", "")[:200],
+                "overview": (vol.get("description") or "")[:200],
             })
+            if len(recommended_books) >= 12:
+                break
     except Exception:
         pass
 
-    return render_template("discover.html", trending_movies=trending_movies, trending_books=trending_books)
+    return render_template("discover.html",
+        recommended_movies=recommended_movies,
+        recommended_books=recommended_books,
+        is_personalized_movies=is_personalized_movies,
+        is_personalized_books=is_personalized_books,
+    )
+
+
+# =====================
+# --- Preview Routes (JSON) ---
+# =====================
+
+@app.route("/movie_preview/<int:tmdb_id>")
+@login_required
+def movie_preview(tmdb_id):
+    try:
+        r = requests.get(f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+                         params={"api_key": TMDB_API_KEY, "append_to_response": "credits"}, timeout=6)
+        d = r.json()
+        cast = [c["name"] for c in d.get("credits", {}).get("cast", [])[:5]]
+        genres = [g["name"] for g in d.get("genres", [])]
+        return jsonify({
+            "title": d.get("title", ""),
+            "year": (d.get("release_date") or "")[:4],
+            "overview": d.get("overview", ""),
+            "poster": f"https://image.tmdb.org/t/p/w300{d.get('poster_path', '')}",
+            "rating": round(d.get("vote_average", 0), 1),
+            "genres": ", ".join(genres),
+            "cast": ", ".join(cast),
+            "runtime": d.get("runtime", ""),
+            "tmdb_id": tmdb_id,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/book_preview/<book_id>")
+@login_required
+def book_preview(book_id):
+    try:
+        r = requests.get(f"https://www.googleapis.com/books/v1/volumes/{book_id}", timeout=6)
+        data = r.json()
+        vol = data.get("volumeInfo", {})
+        thumb = ""
+        if "imageLinks" in vol:
+            thumb = vol["imageLinks"].get("thumbnail", "").replace("http://", "https://")
+        return jsonify({
+            "title": vol.get("title", ""),
+            "author": ", ".join(vol.get("authors", ["Unknown"])),
+            "year": (vol.get("publishedDate") or "")[:4],
+            "overview": (vol.get("description") or "")[:600],
+            "poster": thumb,
+            "genres": ", ".join(vol.get("categories", [])),
+            "pages": vol.get("pageCount", ""),
+            "google_id": book_id,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =====================
+# --- Quick Add Routes ---
+# =====================
+
+@app.route("/quick_add_movie")
+@login_required
+def quick_add_movie():
+    tmdb_id = request.args.get("id")
+    status = request.args.get("status", "to_watch")
+    if not tmdb_id:
+        return redirect(url_for("discover"))
+
+    # Don't add duplicates
+    existing = Movie.query.filter_by(user_id=current_user.id, tmdb_id=str(tmdb_id)).first()
+    if existing:
+        flash(f'"{existing.title}" is already in your collection.', "error")
+        return redirect(url_for("discover"))
+
+    try:
+        r = requests.get(f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+                         params={"api_key": TMDB_API_KEY}, timeout=6)
+        d = r.json()
+        genres = ", ".join([g["name"] for g in d.get("genres", [])])
+        new_movie = Movie(
+            user_id=current_user.id,
+            tmdb_id=str(tmdb_id),
+            title=d.get("title", "Unknown"),
+            year=(d.get("release_date") or "")[:4],
+            rating=0.0,
+            description=(d.get("overview") or "")[:1000],
+            genre=genres,
+            img_url=f"https://image.tmdb.org/t/p/w500{d.get('poster_path', '')}",
+            status=status,
+            date_watched=date.today() if status == "watched" else None,
+        )
+        db.session.add(new_movie)
+        db.session.commit()
+        flash(f'"{new_movie.title}" added to your collection!', "success")
+    except Exception as e:
+        flash(f"Could not add movie: {str(e)}", "error")
+
+    return redirect(url_for("discover"))
+
+
+@app.route("/quick_add_book")
+@login_required
+def quick_add_book():
+    google_id = request.args.get("id")
+    status = request.args.get("status", "to_read")
+    if not google_id:
+        return redirect(url_for("discover"))
+
+    existing = Book.query.filter_by(user_id=current_user.id, google_id=google_id).first()
+    if existing:
+        flash(f'"{existing.title}" is already in your collection.', "error")
+        return redirect(url_for("discover"))
+
+    try:
+        r = requests.get(f"https://www.googleapis.com/books/v1/volumes/{google_id}", timeout=6)
+        data = r.json()
+        vol = data.get("volumeInfo", {})
+        thumb = ""
+        if "imageLinks" in vol:
+            thumb = vol["imageLinks"].get("thumbnail", "").replace("http://", "https://")
+        new_book = Book(
+            user_id=current_user.id,
+            google_id=google_id,
+            title=vol.get("title", "Unknown"),
+            author=", ".join(vol.get("authors", ["Unknown"])),
+            year=(vol.get("publishedDate") or "")[:4],
+            rating=0.0,
+            description=(vol.get("description") or "")[:1000],
+            genre=", ".join(vol.get("categories", [])),
+            img_url=thumb,
+            status=status,
+            date_read=date.today() if status == "read" else None,
+        )
+        db.session.add(new_book)
+        db.session.commit()
+        flash(f'"{new_book.title}" added to your collection!', "success")
+    except Exception as e:
+        flash(f"Could not add book: {str(e)}", "error")
+
+    return redirect(url_for("discover"))
 
 
 # =====================
@@ -310,8 +573,15 @@ def find():
 @login_required
 def select():
     tmdb_id = request.args.get("id")
+    status = request.args.get("status", "to_watch")
     if not tmdb_id:
         return redirect(url_for("add"))
+
+    existing = Movie.query.filter_by(user_id=current_user.id, tmdb_id=str(tmdb_id)).first()
+    if existing:
+        flash(f'"{existing.title}" is already in your collection.', "error")
+        return redirect(url_for("collection", tab="movies"))
+
     r = requests.get(f"https://api.themoviedb.org/3/movie/{tmdb_id}",
                      params={"api_key": TMDB_API_KEY})
     d = r.json()
@@ -322,13 +592,17 @@ def select():
         title=d.get("title", "Unknown"),
         year=(d.get("release_date") or "")[:4],
         rating=0.0,
-        description=d.get("overview", "")[:1000],
+        description=(d.get("overview") or "")[:1000],
         genre=genres,
         img_url=f"https://image.tmdb.org/t/p/w500{d.get('poster_path', '')}",
-        status="to_watch",
+        status=status,
+        date_watched=date.today() if status == "watched" else None,
     )
     db.session.add(new_movie)
     db.session.commit()
+    if status == "to_watch":
+        flash(f'"{new_movie.title}" added to your watchlist!', "success")
+        return redirect(url_for("collection", tab="movies"))
     return redirect(url_for("edit", movie_id=new_movie.id))
 
 
@@ -339,24 +613,31 @@ def edit(movie_id):
     if not movie or movie.user_id != current_user.id:
         return redirect(url_for("collection"))
     class EditForm(FlaskForm):
+        title = StringField("Title", validators=[DataRequired()])
         rating = StringField("Your Rating (0–10)")
-        review = StringField("Your Review")
+        review = TextAreaField("Your Review")
+        description = TextAreaField("Synopsis")
         status = SelectField("Status", choices=[("to_watch", "🕐 To Watch"), ("watched", "✅ Watched")])
         submit = SubmitField("Save")
     form = EditForm()
     if form.validate_on_submit():
+        movie.title = form.title.data
         try:
             movie.rating = float(form.rating.data or 0)
         except ValueError:
             movie.rating = 0.0
         movie.review = form.review.data
+        movie.description = form.description.data
         movie.status = form.status.data
         if form.status.data == "watched" and not movie.date_watched:
             movie.date_watched = date.today()
         db.session.commit()
+        flash("Saved!", "success")
         return redirect(url_for("collection", tab="movies"))
+    form.title.data = movie.title
     form.rating.data = str(movie.rating)
     form.review.data = movie.review
+    form.description.data = movie.description
     form.status.data = movie.status
     return render_template("edit.html", item=movie, form=form, item_type="Movie")
 
@@ -368,15 +649,8 @@ def delete(movie_id):
     if movie and movie.user_id == current_user.id:
         db.session.delete(movie)
         db.session.commit()
+        flash("Movie removed.", "success")
     return redirect(url_for("collection", tab="movies"))
-
-
-# Quick-add from discover page
-@app.route("/quick_add_movie")
-@login_required
-def quick_add_movie():
-    tmdb_id = request.args.get("id")
-    return redirect(url_for("select", id=tmdb_id))
 
 
 # =====================
@@ -401,9 +675,14 @@ def find_book():
     title = request.args.get("title")
     if not title:
         return redirect(url_for("add_book"))
-    r = requests.get("https://www.googleapis.com/books/v1/volumes",
-                     params={"q": title, "maxResults": 10})
-    data = r.json()
+    try:
+        r = requests.get("https://www.googleapis.com/books/v1/volumes",
+                         params={"q": title, "maxResults": 12}, timeout=8)
+        data = r.json()
+    except Exception:
+        flash("Could not reach Google Books API. Please try again.", "error")
+        return redirect(url_for("add_book"))
+
     items = []
     for item in data.get("items", []):
         vol = item.get("volumeInfo", {})
@@ -416,6 +695,7 @@ def find_book():
             "release_date": vol.get("publishedDate", ""),
             "poster_path": None,
             "thumb": thumb,
+            "author": ", ".join(vol.get("authors", ["Unknown"])),
         })
     return render_template("select.html", items=items, item_type="Book")
 
@@ -424,17 +704,34 @@ def find_book():
 @login_required
 def select_book():
     book_id = request.args.get("id")
+    status = request.args.get("status", "to_read")
     if not book_id:
         return redirect(url_for("add_book"))
-    r = requests.get(f"https://www.googleapis.com/books/v1/volumes/{book_id}")
-    data = r.json()
+
+    existing = Book.query.filter_by(user_id=current_user.id, google_id=book_id).first()
+    if existing:
+        flash(f'"{existing.title}" is already in your collection.', "error")
+        return redirect(url_for("collection", tab="books"))
+
+    try:
+        r = requests.get(f"https://www.googleapis.com/books/v1/volumes/{book_id}", timeout=8)
+        data = r.json()
+    except Exception:
+        flash("Could not fetch book details. Please try again.", "error")
+        return redirect(url_for("add_book"))
+
     vol = data.get("volumeInfo", {})
+    if not vol:
+        flash("Book not found. Please try again.", "error")
+        return redirect(url_for("add_book"))
+
     year = (vol.get("publishedDate") or "")[:4]
     authors = ", ".join(vol.get("authors", ["Unknown"]))
     thumb = ""
     if "imageLinks" in vol:
         thumb = vol["imageLinks"].get("thumbnail", "").replace("http://", "https://")
     categories = ", ".join(vol.get("categories", []))
+
     new_book = Book(
         user_id=current_user.id,
         google_id=book_id,
@@ -442,13 +739,18 @@ def select_book():
         author=authors,
         year=year,
         rating=0.0,
-        description=vol.get("description", "")[:1000],
+        description=(vol.get("description") or "")[:1000],
         genre=categories,
         img_url=thumb,
-        status="to_read",
+        status=status,
+        date_read=date.today() if status == "read" else None,
     )
     db.session.add(new_book)
     db.session.commit()
+
+    if status == "to_read":
+        flash(f'"{new_book.title}" added to your reading list!', "success")
+        return redirect(url_for("collection", tab="books"))
     return redirect(url_for("edit_book", book_id=new_book.id))
 
 
@@ -459,24 +761,31 @@ def edit_book(book_id):
     if not book or book.user_id != current_user.id:
         return redirect(url_for("collection"))
     class EditForm(FlaskForm):
+        title = StringField("Title", validators=[DataRequired()])
         rating = StringField("Your Rating (0–10)")
-        review = StringField("Your Review")
+        review = TextAreaField("Your Review")
+        description = TextAreaField("Synopsis")
         status = SelectField("Status", choices=[("to_read", "📖 To Read"), ("read", "✅ Read")])
         submit = SubmitField("Save")
     form = EditForm()
     if form.validate_on_submit():
+        book.title = form.title.data
         try:
             book.rating = float(form.rating.data or 0)
         except ValueError:
             book.rating = 0.0
         book.review = form.review.data
+        book.description = form.description.data
         book.status = form.status.data
         if form.status.data == "read" and not book.date_read:
             book.date_read = date.today()
         db.session.commit()
+        flash("Saved!", "success")
         return redirect(url_for("collection", tab="books"))
+    form.title.data = book.title
     form.rating.data = str(book.rating)
     form.review.data = book.review
+    form.description.data = book.description
     form.status.data = book.status
     return render_template("edit.html", item=book, form=form, item_type="Book")
 
@@ -488,6 +797,7 @@ def delete_book(book_id):
     if book and book.user_id == current_user.id:
         db.session.delete(book)
         db.session.commit()
+        flash("Book removed.", "success")
     return redirect(url_for("collection", tab="books"))
 
 
