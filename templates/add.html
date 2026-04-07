@@ -18,7 +18,7 @@
             <div class="form-group">
                 <label class="form-label">{{ form.title.label.text }}</label>
                 <div class="search-input-wrap">
-                    {{ form.title(class="form-control", placeholder="Type a title and press Search...") }}
+                    {{ form.title(class="form-control live-search", data_type=('book' if item_type == 'Book' else 'movie'), placeholder="Type a title...", autocomplete="off") }}
                     <i class="fas fa-search search-icon"></i>
                 </div>
             </div>

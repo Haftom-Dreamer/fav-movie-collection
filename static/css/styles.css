@@ -1826,3 +1826,33 @@ select.form-control option { background: var(--bg-surface); }
 }
 .btn-preview.book { background: rgba(67,184,156,0.85); }
 .discover-card:hover .btn-preview { transform: translateY(0); }
+
+/* Autocomplete Suggestion Dropdown */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0 0 10px 10px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+}
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.2s;
+    color: white;
+}
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+.autocomplete-item:hover {
+    background: rgba(255,255,255,0.1);
+}

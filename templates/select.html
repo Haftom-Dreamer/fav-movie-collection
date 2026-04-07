@@ -10,6 +10,10 @@
             Select a {{ item_type | default('Movie') }}
         </h1>
         <p class="page-subtitle">Click <strong>Preview</strong> to see details, or use the quick buttons to add instantly.</p>
+        <form action="{{ url_for('find_book') if item_type == 'Book' else url_for('find') }}" method="GET" style="display:flex; max-width:500px; margin: 1.5rem auto 0;">
+            <input type="text" name="title" value="{{ query | default('') }}" class="form-control live-search" data-type="{{ 'book' if item_type == 'Book' else 'movie' }}" style="border-radius: 50px 0 0 50px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1); border-right:none;" placeholder="Search another..." required>
+            <button type="submit" class="btn-primary" style="border-radius: 0 50px 50px 0; padding:0 1.5rem;"><i class="fas fa-search"></i></button>
+        </form>
     </div>
 
     {% if items %}

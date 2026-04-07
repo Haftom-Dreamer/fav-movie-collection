@@ -181,6 +181,52 @@ def dashboard():
     books_this_month = [b for b in read_books if b.date_read and
                         b.date_read.month == today.month and b.date_read.year == today.year]
 
+    # --- Streak (consecutive days with activity) ---
+    activity_dates = set()
+    for m in watched:
+        if m.date_watched:
+            activity_dates.add(m.date_watched)
+    for b in read_books:
+        if b.date_read:
+            activity_dates.add(b.date_read)
+    streak = 0
+    check_date = today
+    while check_date in activity_dates:
+        streak += 1
+        check_date -= timedelta(days=1)
+
+    # --- Recent activity ---
+    all_items = []
+    for m in movies:
+        all_items.append({"type": "movie", "item": m, "date": m.date_added})
+    for b in books:
+        all_items.append({"type": "book", "item": b, "date": b.date_added})
+    all_items.sort(key=lambda x: x["date"] or date.min, reverse=True)
+    recent = all_items[:6]
+
+    return render_template("dashboard.html",
+        watched_count=len(watched),
+        to_watch_count=len(to_watch),
+        read_count=len(read_books),
+        to_read_count=len(to_read),
+        movies_this_month=len(movies_this_month),
+        books_this_month=len(books_this_month),
+        recent=recent,
+        avg_movie_rating=round(sum(m.rating for m in watched if m.rating) / max(len(watched), 1), 1),
+        streak=streak
+    )
+
+@app.route("/analytics")
+@login_required
+def analytics():
+    movies = current_user.movies
+    books = current_user.books
+    watched = [m for m in movies if m.status == "watched"]
+    to_watch = [m for m in movies if m.status == "to_watch"]
+    read_books = [b for b in books if b.status == "read"]
+    
+    today = date.today()
+
     # --- Weekly activity (last 7 days) ---
     week_labels = []
     week_movies = []
@@ -214,46 +260,16 @@ def dashboard():
                 genre_counts[g.strip()] += 1
     top_genres = genre_counts.most_common(6)
 
-    # --- Streak (consecutive days with activity) ---
-    activity_dates = set()
-    for m in watched:
-        if m.date_watched:
-            activity_dates.add(m.date_watched)
-    for b in read_books:
-        if b.date_read:
-            activity_dates.add(b.date_read)
-    streak = 0
-    check_date = today
-    while check_date in activity_dates:
-        streak += 1
-        check_date -= timedelta(days=1)
-
     # --- Completion rate ---
     total_movies = len(movies)
     completion_pct = round(len(watched) / total_movies * 100) if total_movies else 0
 
-    # --- Recent activity ---
-    all_items = []
-    for m in movies:
-        all_items.append({"type": "movie", "item": m, "date": m.date_added})
-    for b in books:
-        all_items.append({"type": "book", "item": b, "date": b.date_added})
-    all_items.sort(key=lambda x: x["date"] or date.min, reverse=True)
-    recent = all_items[:6]
-
     week_max = max((week_movies[i] + week_books[i] for i in range(7)), default=0) or 1
     month_max = max((month_movies[i] + month_books[i] for i in range(12)), default=0) or 1
 
-    return render_template("dashboard.html",
+    return render_template("analytics.html",
         watched_count=len(watched),
         to_watch_count=len(to_watch),
-        read_count=len(read_books),
-        to_read_count=len(to_read),
-        movies_this_month=len(movies_this_month),
-        books_this_month=len(books_this_month),
-        recent=recent,
-        avg_movie_rating=round(sum(m.rating for m in watched if m.rating) / max(len(watched), 1), 1),
-        avg_book_rating=round(sum(b.rating for b in read_books if b.rating) / max(len(read_books), 1), 1),
         week_labels=week_labels,
         week_movies=week_movies,
         week_books=week_books,
@@ -263,7 +279,6 @@ def dashboard():
         month_books=month_books,
         month_max=month_max,
         top_genres=top_genres,
-        streak=streak,
         completion_pct=completion_pct,
     )
 
@@ -316,7 +331,10 @@ def _get_user_collection_ids():
 @app.route("/discover")
 @login_required
 def discover():
+    import random
     movie_in_collection, book_in_collection = _get_user_collection_ids()
+    refresh = request.args.get('refresh', type=int, default=0)
+    page_offset = random.randint(1, 4) if refresh else 1
 
     # -- Personalized movie recommendations --
     user_movies = Movie.query.filter_by(user_id=current_user.id, status="watched").all()
@@ -328,35 +346,52 @@ def discover():
                                  params={"api_key": TMDB_API_KEY}, timeout=4)
                 for g in r.json().get("genres", []):
                     genre_ids.add(str(g["id"]))
-                if len(genre_ids) >= 4:
+                if len(genre_ids) >= 6:
                     break
             except Exception:
                 pass
 
+    if genre_ids and refresh:
+        genre_ids = set(random.sample(list(genre_ids), min(3, len(genre_ids))))
+
     recommended_movies = []
     is_personalized_movies = bool(genre_ids)
-    try:
-        params = {"api_key": TMDB_API_KEY, "sort_by": "popularity.desc", "page": 1}
-        if genre_ids:
+    if is_personalized_movies:
+        try:
+            params = {"api_key": TMDB_API_KEY, "sort_by": "popularity.desc", "page": page_offset}
             params["with_genres"] = ",".join(list(genre_ids)[:3])
-        r = requests.get("https://api.themoviedb.org/3/discover/movie", params=params, timeout=6)
-        for item in r.json().get("results", [])[:16]:
+            r = requests.get("https://api.themoviedb.org/3/discover/movie", params=params, timeout=6)
+            for item in r.json().get("results", []):
+                tid = str(item["id"])
+                if tid in movie_in_collection: continue
+                if item.get("poster_path"):
+                    recommended_movies.append({
+                        "tmdb_id": tid, "title": item.get("title", ""),
+                        "year": (item.get("release_date") or "")[:4],
+                        "img_url": f"https://image.tmdb.org/t/p/w300{item['poster_path']}",
+                        "rating": round(item.get("vote_average", 0), 1),
+                        "overview": (item.get("overview") or "")[:200]
+                    })
+                if len(recommended_movies) >= 12: break
+        except Exception: pass
+
+    trending_movies = []
+    try:
+        tparams = {"api_key": TMDB_API_KEY, "sort_by": "popularity.desc", "page": page_offset}
+        r = requests.get("https://api.themoviedb.org/3/discover/movie", params=tparams, timeout=6)
+        for item in r.json().get("results", []):
             tid = str(item["id"])
-            if tid in movie_in_collection:
-                continue
+            if tid in movie_in_collection: continue
             if item.get("poster_path"):
-                recommended_movies.append({
-                    "tmdb_id": tid,
-                    "title": item.get("title", ""),
+                trending_movies.append({
+                    "tmdb_id": tid, "title": item.get("title", ""),
                     "year": (item.get("release_date") or "")[:4],
                     "img_url": f"https://image.tmdb.org/t/p/w300{item['poster_path']}",
                     "rating": round(item.get("vote_average", 0), 1),
-                    "overview": (item.get("overview") or "")[:200],
+                    "overview": (item.get("overview") or "")[:200]
                 })
-            if len(recommended_movies) >= 12:
-                break
-    except Exception:
-        pass
+            if len(trending_movies) >= 12: break
+    except Exception: pass
 
     # -- Personalized book recommendations --
     user_books = Book.query.filter_by(user_id=current_user.id, status="read").all()
@@ -364,40 +399,58 @@ def discover():
     for b in user_books:
         if b.genre:
             book_subjects += [g.strip().lower() for g in b.genre.split(",") if g.strip()]
-    book_query = "+".join(book_subjects[:2]) if book_subjects else "bestsellers fiction"
-    is_personalized_books = bool(book_subjects)
+    if book_subjects and refresh:
+        random.shuffle(book_subjects)
+        
+    book_query = "+".join(book_subjects[:2]) if book_subjects else ""
+    is_personalized_books = bool(book_query)
 
     recommended_books = []
+    if is_personalized_books:
+        try:
+            r = requests.get("https://www.googleapis.com/books/v1/volumes",
+                             params={"q": f"subject:{book_query}", "maxResults": 20,
+                                     "orderBy": "relevance", "printType": "books", "startIndex": (page_offset-1)*15}, timeout=6)
+            for item in r.json().get("items", []):
+                gid = item.get("id")
+                if gid in book_in_collection: continue
+                vol = item.get("volumeInfo", {})
+                thumb = vol.get("imageLinks", {}).get("thumbnail", "").replace("http://", "https://")
+                if not thumb: continue
+                recommended_books.append({
+                    "google_id": gid, "title": vol.get("title", ""),
+                    "author": ", ".join(vol.get("authors", ["Unknown"])),
+                    "year": (vol.get("publishedDate") or "")[:4],
+                    "img_url": thumb, "overview": (vol.get("description") or "")[:200]
+                })
+                if len(recommended_books) >= 12: break
+        except Exception: pass
+
+    trending_books = []
     try:
-        r = requests.get("https://www.googleapis.com/books/v1/volumes",
-                         params={"q": f"subject:{book_query}", "maxResults": 16,
-                                 "orderBy": "relevance", "printType": "books"}, timeout=6)
-        for item in r.json().get("items", []):
+        tr = requests.get("https://www.googleapis.com/books/v1/volumes",
+                         params={"q": "subject:fiction", "maxResults": 20,
+                                 "orderBy": "newest", "printType": "books", "startIndex": (page_offset-1)*15}, timeout=6)
+        for item in tr.json().get("items", []):
             gid = item.get("id")
-            if gid in book_in_collection:
-                continue
+            if gid in book_in_collection: continue
             vol = item.get("volumeInfo", {})
-            thumb = ""
-            if "imageLinks" in vol:
-                thumb = vol["imageLinks"].get("thumbnail", "").replace("http://", "https://")
-            if not thumb:
-                continue
-            recommended_books.append({
-                "google_id": gid,
-                "title": vol.get("title", ""),
+            thumb = vol.get("imageLinks", {}).get("thumbnail", "").replace("http://", "https://")
+            if not thumb: continue
+            trending_books.append({
+                "google_id": gid, "title": vol.get("title", ""),
                 "author": ", ".join(vol.get("authors", ["Unknown"])),
                 "year": (vol.get("publishedDate") or "")[:4],
-                "img_url": thumb,
-                "overview": (vol.get("description") or "")[:200],
+                "img_url": thumb, "overview": (vol.get("description") or "")[:200]
             })
-            if len(recommended_books) >= 12:
-                break
-    except Exception:
-        pass
+            if len(trending_books) >= 12: break
+    except Exception: pass
 
     return render_template("discover.html",
         recommended_movies=recommended_movies,
+        trending_movies=trending_movies,
         recommended_books=recommended_books,
+        trending_books=trending_books,
         is_personalized_movies=is_personalized_movies,
         is_personalized_books=is_personalized_books,
     )
@@ -566,7 +619,7 @@ def find():
     r = requests.get("https://api.themoviedb.org/3/search/movie",
                      params={"api_key": TMDB_API_KEY, "query": title})
     data = r.json()
-    return render_template("select.html", items=data.get("results", []), item_type="Movie")
+    return render_template("select.html", items=data.get("results", []), item_type="Movie", query=title)
 
 
 @app.route("/select")
@@ -697,7 +750,7 @@ def find_book():
             "thumb": thumb,
             "author": ", ".join(vol.get("authors", ["Unknown"])),
         })
-    return render_template("select.html", items=items, item_type="Book")
+    return render_template("select.html", items=items, item_type="Book", query=title)
 
 
 @app.route("/select_book")
@@ -800,6 +853,36 @@ def delete_book(book_id):
         flash("Book removed.", "success")
     return redirect(url_for("collection", tab="books"))
 
+@app.route("/api/search_movie")
+@login_required
+def api_search_movie():
+    query = request.args.get("q", "")
+    if not query:
+        return jsonify([])
+    try:
+        r = requests.get("https://api.themoviedb.org/3/search/movie",
+                         params={"api_key": TMDB_API_KEY, "query": query}, timeout=3)
+        results = [{"id": i["id"], "title": i.get("title", ""), "year": (i.get("release_date") or "")[:4]}
+                   for i in r.json().get("results", [])[:5]]
+        return jsonify(results)
+    except:
+        return jsonify([])
+
+@app.route("/api/search_book")
+@login_required
+def api_search_book():
+    query = request.args.get("q", "")
+    if not query:
+        return jsonify([])
+    try:
+        r = requests.get("https://www.googleapis.com/books/v1/volumes",
+                         params={"q": query, "maxResults": 5}, timeout=3)
+        results = [{"id": i.get("id"), "title": i.get("volumeInfo", {}).get("title", ""),
+                    "year": (i.get("volumeInfo", {}).get("publishedDate") or "")[:4]}
+                   for i in r.json().get("items", [])]
+        return jsonify(results)
+    except:
+        return jsonify([])
 
 if __name__ == "__main__":
     app.run(debug=True)
