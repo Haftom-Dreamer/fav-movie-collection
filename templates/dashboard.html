@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="dashboard-header">
+        <div>
+            <h1 class="page-title">Hi, <span style="color:var(--accent)">{{ current_user.username }}</span> 👋</h1>
+            <p class="page-subtitle">Here's your collection at a glance.</p>
+        </div>
+        <div class="dash-add-buttons">
+            <a href="{{ url_for('add') }}" class="btn-primary"><i class="fas fa-film"></i> Add Movie</a>
+            <a href="{{ url_for('add_book') }}" class="btn-secondary"><i class="fas fa-book"></i> Add Book</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+        <div class="stat-card watched">
+            <div class="stat-icon"><i class="fas fa-film"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ watched_count }}">0</div>
+                <div class="stat-label">Movies Watched</div>
+            </div>
+        </div>
+        <div class="stat-card to-watch">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ to_watch_count }}">0</div>
+                <div class="stat-label">To Watch</div>
+            </div>
+        </div>
+        <div class="stat-card read">
+            <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ read_count }}">0</div>
+                <div class="stat-label">Books Read</div>
+            </div>
+        </div>
+        <div class="stat-card to-read">
+            <div class="stat-icon"><i class="fas fa-bookmark"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ to_read_count }}">0</div>
+                <div class="stat-label">To Read</div>
+            </div>
+        </div>
+        <div class="stat-card monthly">
+            <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ movies_this_month }}">0</div>
+                <div class="stat-label">Movies This Month</div>
+            </div>
+        </div>
+        <div class="stat-card monthly-book">
+            <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ books_this_month }}">0</div>
+                <div class="stat-label">Books This Month</div>
+            </div>
+        </div>
+        <div class="stat-card rating-avg">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-body">
+                <div class="stat-number">{{ avg_movie_rating }}</div>
+                <div class="stat-label">Avg Movie Rating</div>
+            </div>
+        </div>
+        <div class="stat-card streak-card">
+            <div class="stat-icon"><i class="fas fa-fire"></i></div>
+            <div class="stat-body">
+                <div class="stat-number" data-target="{{ streak }}">0</div>
+                <div class="stat-label">Day Streak 🔥</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="analytics-grid">
+
+        <!-- Weekly Chart -->
+        <div class="analytics-card">
+            <h3 class="analytics-title"><i class="fas fa-chart-bar"></i> This Week</h3>
+            <div class="bar-chart" id="weekly-chart">
+                {% for i in range(7) %}
+                <div class="bar-group">
+                    <div class="bar-stack">
+                        <div class="bar-segment movie" style="height:{{ ((week_movies[i] / week_max) * 120) | int }}px" title="{{ week_movies[i] }} movie(s)"></div>
+                        <div class="bar-segment book" style="height:{{ ((week_books[i] / week_max) * 120) | int }}px" title="{{ week_books[i] }} book(s)"></div>
+                    </div>
+                    <div class="bar-label">{{ week_labels[i] }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="chart-legend">
+                <span class="legend-dot movie"></span> Movies
+                <span class="legend-dot book"></span> Books
+            </div>
+        </div>
+
+        <!-- Monthly Chart -->
+        <div class="analytics-card monthly-chart-card">
+            <h3 class="analytics-title"><i class="fas fa-chart-line"></i> This Year</h3>
+            <div class="bar-chart" id="monthly-chart">
+                {% for i in range(12) %}
+                <div class="bar-group">
+                    <div class="bar-stack">
+                        <div class="bar-segment movie" style="height:{{ ((month_movies[i] / month_max) * 100) | int }}px" title="{{ month_movies[i] }} movie(s)"></div>
+                        <div class="bar-segment book" style="height:{{ ((month_books[i] / month_max) * 100) | int }}px" title="{{ month_books[i] }} book(s)"></div>
+                    </div>
+                    <div class="bar-label" style="font-size:0.62rem;">{{ month_labels[i] }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="chart-legend">
+                <span class="legend-dot movie"></span> Movies
+                <span class="legend-dot book"></span> Books
+            </div>
+        </div>
+
+        <!-- Genre Breakdown -->
+        <div class="analytics-card">
+            <h3 class="analytics-title"><i class="fas fa-tags"></i> Top Genres</h3>
+            {% if top_genres %}
+            {% set max_count = top_genres[0][1] %}
+            <div class="genre-bars">
+                {% for genre, count in top_genres %}
+                <div class="genre-row">
+                    <span class="genre-name">{{ genre[:20] }}</span>
+                    <div class="genre-bar-track">
+                        <div class="genre-bar-fill" style="width:{{ (count / max_count * 100) | int }}%"></div>
+                    </div>
+                    <span class="genre-count">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-data-msg">Add more items to see genre breakdown.</p>
+            {% endif %}
+        </div>
+
+        <!-- Completion Rate -->
+        <div class="analytics-card completion-card">
+            <h3 class="analytics-title"><i class="fas fa-bullseye"></i> Completion Rate</h3>
+            <div class="completion-ring-wrap">
+                <svg viewBox="0 0 100 100" class="completion-ring">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="10"
+                        stroke-dasharray="{{ (completion_pct / 100 * 251.2) | round(1) }} 251.2"
+                        stroke-dashoffset="62.8" stroke-linecap="round"/>
+                </svg>
+                <div class="completion-pct">{{ completion_pct }}%</div>
+            </div>
+            <p class="completion-label">of watchlist watched</p>
+
+            <div class="mini-stats">
+                <div><span>{{ watched_count }}</span> watched</div>
+                <div><span>{{ to_watch_count }}</span> remaining</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-heading">Recent Activity</h2>
+            <a href="{{ url_for('collection') }}" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        {% if recent %}
+        <div class="recent-grid">
+            {% for entry in recent %}
+            <div class="recent-card">
+                <div class="recent-poster">
+                    {% if entry.item.img_url %}
+                    <img src="{{ entry.item.img_url }}" alt="{{ entry.item.title }}">
+                    {% else %}
+                    <div class="poster-placeholder"><i class="fas fa-{% if entry.type == 'movie' %}film{% else %}book{% endif %}"></i></div>
+                    {% endif %}
+                    <span class="type-badge {{ entry.type }}">{{ entry.type }}</span>
+                </div>
+                <div class="recent-info">
+                    <div class="recent-title">{{ entry.item.title }}</div>
+                    {% if entry.type == 'book' %}
+                    <div class="recent-sub">{{ entry.item.author }}</div>
+                    {% endif %}
+                    <div class="recent-meta">
+                        <span class="status-badge {{ entry.item.status }}">
+                            {% if entry.item.status in ['watched', 'read'] %}✅{% else %}🕐{% endif %}
+                            {{ entry.item.status | replace('_', ' ') | title }}
+                        </span>
+                        {% if entry.item.rating %}
+                        <span class="star-mini">⭐ {{ entry.item.rating }}/10</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-star" style="font-size:3rem; color:var(--accent); opacity:.4;"></i>
+            <h3>Your collection is empty</h3>
+            <p>Start by adding a movie or book!</p>
+            <div style="display:flex; gap:1rem; justify-content:center; margin-top:1rem;">
+                <a href="{{ url_for('add') }}" class="btn-primary"><i class="fas fa-film"></i> Add Movie</a>
+                <a href="{{ url_for('add_book') }}" class="btn-secondary"><i class="fas fa-book"></i> Add Book</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Links -->
+    <div class="dashboard-section">
+        <div class="section-header"><h2 class="section-heading">Explore</h2></div>
+        <div class="quick-links">
+            <a href="{{ url_for('discover') }}" class="quick-link-card">
+                <i class="fas fa-compass"></i>
+                <span>Discover</span>
+                <small>Personalized picks for you</small>
+            </a>
+            <a href="{{ url_for('collection', tab='movies', status='to_watch') }}" class="quick-link-card">
+                <i class="fas fa-clock"></i>
+                <span>Watchlist</span>
+                <small>{{ to_watch_count }} movie(s) waiting</small>
+            </a>
+            <a href="{{ url_for('collection', tab='books', status='to_read') }}" class="quick-link-card">
+                <i class="fas fa-bookmark"></i>
+                <span>Reading List</span>
+                <small>{{ to_read_count }} book(s) to read</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    if (target === 0) { el.textContent = '0'; return; }
+    let current = 0;
+    const step = Math.ceil(target / 30);
+    const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current;
+        if (current >= target) clearInterval(timer);
+    }, 40);
+});
+</script>
+{% endblock %}

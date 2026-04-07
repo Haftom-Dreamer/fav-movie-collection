@@ -1,16 +1,30 @@
 {% extends 'base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}Add a Movie{% endblock %}
+{% block title %}Add a {{ item_type | default('Movie') }}{% endblock %}
 
 {% block content %}
-<div class="form-container">
-  <h1>Add a Movie</h1>
-  <form method="POST" action="{{ url_for('add') }}" novalidate>
-    {{ form.hidden_tag() }}
-    {{ form.title.label }}
-    {{ form.title(class="form-control") }}
-    {{ form.submit(class="btn-submit") }}
-  </form>
+<div class="page-container narrow">
+    <div class="form-page-header">
+        <h1 class="page-title">
+            <i class="fas fa-{% if item_type == 'Book' %}book{% else %}film{% endif %}" style="color:{% if item_type == 'Book' %}var(--accent-book){% else %}var(--accent){% endif %}"></i>
+            Add a {{ item_type | default('Movie') }}
+        </h1>
+        <p class="page-subtitle">Search and add to your collection.</p>
+    </div>
+    <div class="form-card">
+        <form method="POST" action="{{ url_for('add_book' if item_type == 'Book' else 'add') }}" novalidate class="styled-form">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label class="form-label">{{ form.title.label.text }}</label>
+                <div class="search-input-wrap">
+                    {{ form.title(class="form-control", placeholder="Type a title and press Search...") }}
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+            </div>
+            {{ form.submit(class="btn-primary full-width") }}
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
 </div>
 {% endblock %}

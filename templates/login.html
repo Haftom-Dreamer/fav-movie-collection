@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Welcome back</h1>
+            <p>Sign in to your collection.</p>
+        </div>
+        <form method="POST" novalidate class="auth-form">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>{{ form.email.label.text }}</label>
+                {{ form.email(class="form-control", placeholder="you@example.com") }}
+                {% if form.email.errors %}<span class="field-error">{{ form.email.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>{{ form.password.label.text }}</label>
+                {{ form.password(class="form-control", placeholder="Your password") }}
+                {% if form.password.errors %}<span class="field-error">{{ form.password.errors[0] }}</span>{% endif %}
+            </div>
+            {{ form.submit(class="btn-auth") }}
+        </form>
+        <p class="auth-switch">New here? <a href="{{ url_for('register') }}">Create an Account</a></p>
+    </div>
+    <div class="auth-visual">
+        <div class="auth-visual-text">
+            <h2>Your Collection Awaits.</h2>
+            <p>Pick up where you left off — rate, review, discover more.</p>
+            <div class="auth-features">
+                <div><i class="fas fa-chart-bar"></i> Activity Dashboard</div>
+                <div><i class="fas fa-list-check"></i> Watch / Read Lists</div>
+                <div><i class="fas fa-fire"></i> Trending Now</div>
+                <div><i class="fas fa-pen"></i> Personal Reviews</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

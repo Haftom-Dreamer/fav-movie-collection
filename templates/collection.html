@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}My Collection{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="collection-header">
+        <h1 class="page-title">My Collection</h1>
+        <div class="collection-actions">
+            <a href="{{ url_for('add') }}" class="btn-primary"><i class="fas fa-film"></i> Add Movie</a>
+            <a href="{{ url_for('add_book') }}" class="btn-secondary"><i class="fas fa-book"></i> Add Book</a>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-bar">
+        <a href="{{ url_for('collection', tab='movies', status=status, sort=sort) }}"
+           class="tab-item {% if tab == 'movies' %}active{% endif %}">
+            <i class="fas fa-film"></i> Movies
+        </a>
+        <a href="{{ url_for('collection', tab='books', status=status, sort=sort) }}"
+           class="tab-item {% if tab == 'books' %}active{% endif %}">
+            <i class="fas fa-book"></i> Books
+        </a>
+    </div>
+
+    <!-- Toolbar: filters + sort + search -->
+    <div class="collection-toolbar">
+        <div class="filter-bar">
+            {% if tab == 'movies' %}
+            <a class="filter-chip {% if status == 'all' %}active{% endif %}" href="{{ url_for('collection', tab='movies', status='all', sort=sort) }}">All</a>
+            <a class="filter-chip {% if status == 'watched' %}active{% endif %}" href="{{ url_for('collection', tab='movies', status='watched', sort=sort) }}">✅ Watched</a>
+            <a class="filter-chip {% if status == 'to_watch' %}active{% endif %}" href="{{ url_for('collection', tab='movies', status='to_watch', sort=sort) }}">🕐 To Watch</a>
+            {% else %}
+            <a class="filter-chip {% if status == 'all' %}active{% endif %}" href="{{ url_for('collection', tab='books', status='all', sort=sort) }}">All</a>
+            <a class="filter-chip {% if status == 'read' %}active{% endif %}" href="{{ url_for('collection', tab='books', status='read', sort=sort) }}">✅ Read</a>
+            <a class="filter-chip {% if status == 'to_read' %}active{% endif %}" href="{{ url_for('collection', tab='books', status='to_read', sort=sort) }}">📖 To Read</a>
+            {% endif %}
+        </div>
+        <div class="sort-search-group">
+            <input type="text" id="searchInput" class="search-inline" placeholder="🔍 Filter by title..." oninput="filterCards(this.value)">
+            <div class="sort-group">
+                <a class="sort-chip {% if sort == 'newest' %}active{% endif %}" href="{{ url_for('collection', tab=tab, status=status, sort='newest') }}">Newest</a>
+                <a class="sort-chip {% if sort == 'rating' %}active{% endif %}" href="{{ url_for('collection', tab=tab, status=status, sort='rating') }}">Rating</a>
+                <a class="sort-chip {% if sort == 'title' %}active{% endif %}" href="{{ url_for('collection', tab=tab, status=status, sort='title') }}">A–Z</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    {% if tab == 'movies' %}
+        {% if movies %}
+        <div class="media-grid" id="mediaGrid">
+            {% for movie in movies %}
+            <div class="media-card" id="card-movie-{{ movie.id }}" data-title="{{ movie.title | lower }}">
+                <div class="card-inner">
+                    <div class="card-front" onclick="flipCard('movie', {{ movie.id }})">
+                        {% if movie.img_url %}
+                        <img src="{{ movie.img_url }}" alt="{{ movie.title }}" loading="lazy">
+                        {% else %}
+                        <div class="img-placeholder"><i class="fas fa-film"></i></div>
+                        {% endif %}
+                        <div class="card-front-info">
+                            <div class="card-title">{{ movie.title }}</div>
+                            <div class="card-meta">
+                                <span class="status-chip {{ movie.status }}">{{ '✅' if movie.status == 'watched' else '🕐' }}</span>
+                                {% if movie.rating %}<span class="rating-chip">⭐ {{ movie.rating }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-back-title">{{ movie.title }} {% if movie.year %}({{ movie.year }}){% endif %}</div>
+                        {% if movie.genre %}<div class="card-genre">{{ movie.genre[:40] }}</div>{% endif %}
+                        <p class="card-review">{{ movie.review if movie.review else 'No review yet.' }}</p>
+                        <p class="card-desc">{{ movie.description[:120] }}{% if movie.description | length > 120 %}...{% endif %}</p>
+                        <div class="card-actions">
+                            <a href="{{ url_for('edit', movie_id=movie.id) }}" class="btn-card-edit"><i class="fas fa-pen"></i> Edit</a>
+                            <a href="{{ url_for('delete', movie_id=movie.id) }}" class="btn-card-delete" onclick="return confirm('Delete this movie?')"><i class="fas fa-trash"></i></a>
+                            <button class="btn-card-flip" onclick="flipCard('movie', {{ movie.id }})"><i class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="no-results-msg" id="noResults" style="display:none;">No matches found.</div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-film" style="font-size:3rem;color:var(--accent);opacity:.4;"></i>
+            <h3>No movies here yet</h3>
+            <p>Add your first movie to get started!</p>
+            <a href="{{ url_for('add') }}" class="btn-primary" style="margin-top:1rem;"><i class="fas fa-plus"></i> Add Movie</a>
+        </div>
+        {% endif %}
+
+    {% else %}
+        {% if books %}
+        <div class="media-grid" id="mediaGrid">
+            {% for book in books %}
+            <div class="media-card" id="card-book-{{ book.id }}" data-title="{{ book.title | lower }}">
+                <div class="card-inner">
+                    <div class="card-front" onclick="flipCard('book', {{ book.id }})">
+                        {% if book.img_url %}
+                        <img src="{{ book.img_url }}" alt="{{ book.title }}" loading="lazy">
+                        {% else %}
+                        <div class="img-placeholder"><i class="fas fa-book"></i></div>
+                        {% endif %}
+                        <div class="card-front-info">
+                            <div class="card-title">{{ book.title }}</div>
+                            <div class="card-sub">{{ book.author }}</div>
+                            <div class="card-meta">
+                                <span class="status-chip {{ book.status }}">{{ '✅' if book.status == 'read' else '📖' }}</span>
+                                {% if book.rating %}<span class="rating-chip">⭐ {{ book.rating }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-back-title">{{ book.title }}</div>
+                        <div class="card-genre">by {{ book.author }} {% if book.year %}· {{ book.year }}{% endif %}</div>
+                        <p class="card-review">{{ book.review if book.review else 'No review yet.' }}</p>
+                        <p class="card-desc">{{ book.description[:120] }}{% if book.description | length > 120 %}...{% endif %}</p>
+                        <div class="card-actions">
+                            <a href="{{ url_for('edit_book', book_id=book.id) }}" class="btn-card-edit"><i class="fas fa-pen"></i> Edit</a>
+                            <a href="{{ url_for('delete_book', book_id=book.id) }}" class="btn-card-delete" onclick="return confirm('Delete this book?')"><i class="fas fa-trash"></i></a>
+                            <button class="btn-card-flip" onclick="flipCard('book', {{ book.id }})"><i class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="no-results-msg" id="noResults" style="display:none;">No matches found.</div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book" style="font-size:3rem;color:var(--accent-book);opacity:.4;"></i>
+            <h3>No books here yet</h3>
+            <a href="{{ url_for('add_book') }}" class="btn-secondary" style="margin-top:1rem;"><i class="fas fa-plus"></i> Add Book</a>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+<script>
+function flipCard(type, id) {
+    const card = document.querySelector(`#card-${type}-${id} .card-inner`);
+    if (card) card.classList.toggle('flipped');
+}
+
+function filterCards(query) {
+    const q = query.toLowerCase();
+    const cards = document.querySelectorAll('#mediaGrid .media-card');
+    let visible = 0;
+    cards.forEach(c => {
+        const title = c.dataset.title || '';
+        const show = title.includes(q);
+        c.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    const noRes = document.getElementById('noResults');
+    if (noRes) noRes.style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+{% endblock %}

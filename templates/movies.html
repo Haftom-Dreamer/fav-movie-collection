@@ -1,15 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}My Movie Collection{% endblock %}
+{% block title %}My Collection{% endblock %}
 
 {% block content %}
 <h1 class="page-heading">My Collection</h1>
+
+<h2 class="section-title" style="font-size: 2rem; margin-top:20px; margin-bottom: 20px;">My Movies</h2>
 <div class="movie-grid">
   {% for movie in movies %}
   <div class="movie-card">
-    <div class="flip-card-inner" id="flip-{{ movie.id }}">
+    <div class="flip-card-inner" id="flip-movie-{{ movie.id }}">
       
-      <div class="flip-card-front">
+      <div class="flip-card-front" onclick="flipCardMovie({{ movie.id }})" style="cursor: pointer;">
         <img src="{{ movie.img_url }}" alt="{{ movie.title }} Poster">
         <div class="card-content">
           <div class="title">{{ movie.title }}</div>
@@ -20,28 +22,56 @@
       <div class="flip-card-back">
           <div class="title">{{ movie.title }} ({{ movie.year }})</div>
           <p class="review"><strong>My Review:</strong> {{ movie.review if movie.review else 'Not reviewed yet.' }}</p>
-          <p class="description"><strong>Synopsis:</strong> {{ movie.description }}</p>
+          <p class="description"><strong>Synopsis:</strong> {{ movie.description[:150] }}...</p>
           <div class="btn-group">
             <a href="{{ url_for('edit', movie_id=movie.id) }}" class="nav-link">Edit</a>
             <a href="{{ url_for('delete', movie_id=movie.id) }}" class="nav-link cta-button">Delete</a>
-            <button class="nav-link" onclick="flipCard({{ movie.id }})">Back</button>
+            <button class="nav-link" onclick="flipCardMovie({{ movie.id }})">Back</button>
           </div>
       </div>
 
     </div>
   </div>
-  <script>
-    // Add event listener to flip card on details click
-    document.querySelector('#flip-{{ movie.id }}').previousElementSibling.querySelector('.btn-details').addEventListener('click', function() {
-        flipCard({{ movie.id }});
-    });
-  </script>
+  {% endfor %}
+</div>
+
+<h2 class="section-title" style="font-size: 2rem; margin-top:50px; margin-bottom: 20px;">My Books</h2>
+<div class="movie-grid">
+  {% for book in books %}
+  <div class="movie-card">
+    <div class="flip-card-inner" id="flip-book-{{ book.id }}">
+      
+      <div class="flip-card-front" onclick="flipCardBook({{ book.id }})" style="cursor: pointer;">
+        <img src="{{ book.img_url }}" alt="{{ book.title }} Cover">
+        <div class="card-content">
+          <div class="title">{{ book.title }}</div>
+          <div class="rating">⭐ {{ book.rating }}/10</div>
+        </div>
+      </div>
+      
+      <div class="flip-card-back">
+          <div class="title">{{ book.title }} by {{ book.author }} ({{ book.year }})</div>
+          <p class="review"><strong>My Review:</strong> {{ book.review if book.review else 'Not reviewed yet.' }}</p>
+          <p class="description"><strong>Summary:</strong> {{ book.description[:150] }}...</p>
+          <div class="btn-group">
+            <a href="{{ url_for('edit_book', book_id=book.id) }}" class="nav-link">Edit</a>
+            <a href="{{ url_for('delete_book', book_id=book.id) }}" class="nav-link cta-button">Delete</a>
+            <button class="nav-link" onclick="flipCardBook({{ book.id }})">Back</button>
+          </div>
+      </div>
+
+    </div>
+  </div>
   {% endfor %}
 </div>
 
 <script>
-function flipCard(id) {
-  const cardInner = document.getElementById('flip-' + id);
+function flipCardMovie(id) {
+  const cardInner = document.getElementById('flip-movie-' + id);
+  cardInner.classList.toggle('flipped');
+}
+function flipCardBook(id) {
+  const cardInner = document.getElementById('flip-book-' + id);
   cardInner.classList.toggle('flipped');
 }
 </script>

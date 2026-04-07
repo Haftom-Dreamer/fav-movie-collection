@@ -1,19 +1,135 @@
 {% extends 'base.html' %}
 
-{% block title %}Select a Movie{% endblock %}
+{% block title %}Select a {{ item_type | default('Movie') }}{% endblock %}
 
 {% block content %}
-<h1 class="page-heading">Select a Movie</h1>
-<p>We found these results for your search. Click the one you want to add.</p>
-<div class="select-list">
-  {% for movie in movies %}
-    <a href="{{ url_for('select', id=movie.id) }}">
-      <img src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }} Poster">
-      <div>
-        <div class="title">{{ movie.title }}</div>
-        <span>{{ movie.release_date.split('-')[0] }}</span>
-      </div>
-    </a>
-  {% endfor %}
+<div class="page-container narrow">
+    <div class="form-page-header">
+        <h1 class="page-title">
+            <i class="fas fa-{% if item_type == 'Book' %}book{% else %}film{% endif %}" style="color:{% if item_type == 'Book' %}var(--accent-book){% else %}var(--accent){% endif %}"></i>
+            Select a {{ item_type | default('Movie') }}
+        </h1>
+        <p class="page-subtitle">Click <strong>Preview</strong> to see details, or use the quick buttons to add instantly.</p>
+    </div>
+
+    {% if items %}
+    <div class="select-list">
+        {% for item in items %}
+        <div class="select-item">
+            <div class="select-thumb">
+                {% if item_type == 'Book' %}
+                    {% if item.thumb %}
+                    <img src="{{ item.thumb }}" alt="{{ item.title }}">
+                    {% else %}
+                    <div class="thumb-placeholder"><i class="fas fa-book"></i></div>
+                    {% endif %}
+                {% else %}
+                    {% if item.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w92{{ item.poster_path }}" alt="{{ item.title }}">
+                    {% else %}
+                    <div class="thumb-placeholder"><i class="fas fa-film"></i></div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="select-info">
+                <div class="select-title">{{ item.title }}</div>
+                <div class="select-sub">
+                    {% if item_type == 'Book' %}
+                        {{ item.author | default('') }} · {{ item.release_date[:4] if item.release_date else 'Unknown' }}
+                    {% else %}
+                        {{ item.release_date[:4] if item.release_date else 'Unknown year' }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="select-actions">
+                {% if item_type == 'Book' %}
+                <button class="btn-sel-preview" onclick="showPreview('book', '{{ item.id }}')"><i class="fas fa-eye"></i></button>
+                <a href="{{ url_for('select_book', id=item.id, status='to_read') }}" class="btn-sel-quick to-read"><i class="fas fa-bookmark"></i> To Read</a>
+                <a href="{{ url_for('select_book', id=item.id, status='read') }}" class="btn-sel-quick read-done"><i class="fas fa-check"></i></a>
+                {% else %}
+                <button class="btn-sel-preview" onclick="showPreview('movie', '{{ item.id }}')"><i class="fas fa-eye"></i></button>
+                <a href="{{ url_for('select', id=item.id, status='to_watch') }}" class="btn-sel-quick to-watch"><i class="fas fa-clock"></i> To Watch</a>
+                <a href="{{ url_for('select', id=item.id, status='watched') }}" class="btn-sel-quick watched"><i class="fas fa-check"></i></a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-search" style="font-size:3rem;color:var(--accent);opacity:.4;"></i>
+        <h3>No results found</h3>
+        <p>Try a different title.</p>
+        <a href="{{ url_for('add_book' if item_type == 'Book' else 'add') }}" class="btn-primary" style="margin-top:1rem;">Try Again</a>
+    </div>
+    {% endif %}
+    <a href="{{ url_for('add_book' if item_type == 'Book' else 'add') }}" class="back-link" style="margin-top:2rem;"><i class="fas fa-arrow-left"></i> Back to Search</a>
 </div>
+
+<!-- Preview Panel -->
+<div class="preview-overlay" id="previewOverlay" onclick="closePreview(event)">
+    <div class="preview-panel" id="previewPanel">
+        <button class="preview-close" onclick="closePreview()"><i class="fas fa-times"></i></button>
+        <div class="preview-loading" id="previewLoading"><i class="fas fa-spinner fa-spin"></i></div>
+        <div class="preview-content" id="previewContent" style="display:none;">
+            <div class="preview-hero">
+                <img id="previewPoster" src="" alt="">
+                <div class="preview-meta">
+                    <h2 id="previewTitle"></h2>
+                    <div class="preview-sub" id="previewSub"></div>
+                    <div class="preview-genres" id="previewGenres"></div>
+                    <div class="preview-rating" id="previewRating"></div>
+                    <div class="preview-extra" id="previewExtra"></div>
+                </div>
+            </div>
+            <p class="preview-overview" id="previewOverview"></p>
+            <div class="preview-actions" id="previewActions"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const ITEM_TYPE = "{{ item_type }}";
+
+function showPreview(type, id) {
+    document.getElementById('previewOverlay').classList.add('active');
+    document.getElementById('previewLoading').style.display = 'flex';
+    document.getElementById('previewContent').style.display = 'none';
+
+    const url = type === 'movie' ? `/movie_preview/${id}` : `/book_preview/${id}`;
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('previewPoster').src = d.poster || '';
+            document.getElementById('previewTitle').textContent = d.title;
+            document.getElementById('previewSub').textContent = type === 'movie'
+                ? (d.year + (d.runtime ? ` · ${d.runtime} min` : ''))
+                : `by ${d.author}${d.year ? ' · ' + d.year : ''}${d.pages ? ' · ' + d.pages + ' pages' : ''}`;
+            document.getElementById('previewGenres').textContent = d.genres || '';
+            document.getElementById('previewRating').textContent = d.rating ? `⭐ ${d.rating} / 10` : '';
+            document.getElementById('previewExtra').textContent = type === 'movie' && d.cast ? `Cast: ${d.cast}` : '';
+            document.getElementById('previewOverview').textContent = d.overview || 'No description available.';
+
+            let actions = '';
+            if (type === 'movie') {
+                actions = `<a href="/select?id=${d.tmdb_id}&status=to_watch" class="btn-preview-action to-watch"><i class="fas fa-clock"></i> Add to Watchlist</a>
+                           <a href="/select?id=${d.tmdb_id}&status=watched" class="btn-preview-action watched"><i class="fas fa-check"></i> Mark as Watched</a>`;
+            } else {
+                actions = `<a href="/select_book?id=${d.google_id}&status=to_read" class="btn-preview-action to-read"><i class="fas fa-bookmark"></i> Add to Reading List</a>
+                           <a href="/select_book?id=${d.google_id}&status=read" class="btn-preview-action read-done"><i class="fas fa-check"></i> Mark as Read</a>`;
+            }
+            document.getElementById('previewActions').innerHTML = actions;
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewContent').style.display = 'block';
+        })
+        .catch(() => {
+            document.getElementById('previewLoading').innerHTML = '<p style="color:var(--danger)">Failed to load details.</p>';
+        });
+}
+
+function closePreview(e) {
+    if (e && e.target !== document.getElementById('previewOverlay')) return;
+    document.getElementById('previewOverlay').classList.remove('active');
+}
+</script>
 {% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Discover{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="discover-header">
+        <h1 class="page-title"><i class="fas fa-compass" style="color:var(--accent)"></i> Discover</h1>
+        <p class="page-subtitle">
+            {% if is_personalized_movies or is_personalized_books %}
+            Handpicked based on your taste — already-collected titles are hidden.
+            {% else %}
+            Popular picks to get you started. Rate some items to unlock personalized picks!
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Movie Recommendations -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-heading">
+                {% if is_personalized_movies %}
+                <i class="fas fa-magic" style="color:var(--accent)"></i> Recommended For You
+                {% else %}
+                <i class="fas fa-fire" style="color:#ff6b6b"></i> Trending Movies
+                {% endif %}
+            </h2>
+            <a href="{{ url_for('add') }}" class="section-link">Search Movie <i class="fas fa-search"></i></a>
+        </div>
+        {% if recommended_movies %}
+        <div class="discover-grid">
+            {% for movie in recommended_movies %}
+            <div class="discover-card" data-tmdb="{{ movie.tmdb_id }}" data-title="{{ movie.title }}" data-year="{{ movie.year }}" data-overview="{{ movie.overview }}" data-poster="{{ movie.img_url }}" data-rating="{{ movie.rating }}">
+                <div class="discover-poster">
+                    <img src="{{ movie.img_url }}" alt="{{ movie.title }}" loading="lazy">
+                    <div class="discover-overlay">
+                        <button class="btn-preview" onclick="showPreview('movie', '{{ movie.tmdb_id }}', this.closest('.discover-card'))">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                    </div>
+                    <div class="tmdb-rating">⭐ {{ movie.rating }}</div>
+                </div>
+                <div class="discover-info">
+                    <div class="discover-title">{{ movie.title }}</div>
+                    <div class="discover-year">{{ movie.year }}</div>
+                    <div class="quick-add-row">
+                        <a href="{{ url_for('quick_add_movie', id=movie.tmdb_id, status='to_watch') }}" class="btn-quick to-watch" title="Add to Watchlist">
+                            <i class="fas fa-clock"></i> To Watch
+                        </a>
+                        <a href="{{ url_for('quick_add_movie', id=movie.tmdb_id, status='watched') }}" class="btn-quick watched" title="Mark as Watched">
+                            <i class="fas fa-check"></i> Watched
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;">
+            <p>No recommendations available right now. Try again later.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Book Recommendations -->
+    <div class="dashboard-section" style="margin-top:3rem;">
+        <div class="section-header">
+            <h2 class="section-heading">
+                {% if is_personalized_books %}
+                <i class="fas fa-magic" style="color:var(--accent-book)"></i> Books You Might Like
+                {% else %}
+                <i class="fas fa-book-open" style="color:var(--accent-book)"></i> Popular Books
+                {% endif %}
+            </h2>
+            <a href="{{ url_for('add_book') }}" class="section-link">Search Book <i class="fas fa-search"></i></a>
+        </div>
+        {% if recommended_books %}
+        <div class="discover-grid">
+            {% for book in recommended_books %}
+            <div class="discover-card" data-google="{{ book.google_id }}" data-title="{{ book.title }}">
+                <div class="discover-poster">
+                    <img src="{{ book.img_url }}" alt="{{ book.title }}" loading="lazy">
+                    <div class="discover-overlay">
+                        <button class="btn-preview book" onclick="showPreview('book', '{{ book.google_id }}', this.closest('.discover-card'))">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                    </div>
+                </div>
+                <div class="discover-info">
+                    <div class="discover-title">{{ book.title }}</div>
+                    <div class="discover-year">{{ book.author }}{% if book.year %} · {{ book.year }}{% endif %}</div>
+                    <div class="quick-add-row">
+                        <a href="{{ url_for('quick_add_book', id=book.google_id, status='to_read') }}" class="btn-quick to-read" title="Add to Reading List">
+                            <i class="fas fa-bookmark"></i> To Read
+                        </a>
+                        <a href="{{ url_for('quick_add_book', id=book.google_id, status='read') }}" class="btn-quick read-done" title="Mark as Read">
+                            <i class="fas fa-check"></i> Read
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;">
+            <p>No book recommendations available right now.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Preview Panel -->
+<div class="preview-overlay" id="previewOverlay" onclick="closePreview(event)">
+    <div class="preview-panel" id="previewPanel">
+        <button class="preview-close" onclick="closePreview()"><i class="fas fa-times"></i></button>
+        <div class="preview-loading" id="previewLoading"><i class="fas fa-spinner fa-spin"></i></div>
+        <div class="preview-content" id="previewContent" style="display:none;">
+            <div class="preview-hero">
+                <img id="previewPoster" src="" alt="">
+                <div class="preview-meta">
+                    <h2 id="previewTitle"></h2>
+                    <div class="preview-sub" id="previewSub"></div>
+                    <div class="preview-genres" id="previewGenres"></div>
+                    <div class="preview-rating" id="previewRating"></div>
+                    <div class="preview-extra" id="previewExtra"></div>
+                </div>
+            </div>
+            <p class="preview-overview" id="previewOverview"></p>
+            <div class="preview-actions" id="previewActions"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPreview(type, id, card) {
+    document.getElementById('previewOverlay').classList.add('active');
+    document.getElementById('previewLoading').style.display = 'flex';
+    document.getElementById('previewContent').style.display = 'none';
+
+    const url = type === 'movie' ? `/movie_preview/${id}` : `/book_preview/${id}`;
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('previewPoster').src = d.poster || '';
+            document.getElementById('previewTitle').textContent = d.title;
+            document.getElementById('previewSub').textContent = type === 'movie'
+                ? (d.year + (d.runtime ? ` · ${d.runtime} min` : ''))
+                : `by ${d.author}${d.year ? ' · ' + d.year : ''}${d.pages ? ' · ' + d.pages + ' pages' : ''}`;
+            document.getElementById('previewGenres').textContent = d.genres || '';
+            document.getElementById('previewRating').textContent = d.rating ? `⭐ ${d.rating} / 10` : '';
+            document.getElementById('previewExtra').textContent = type === 'movie' && d.cast ? `Cast: ${d.cast}` : '';
+            document.getElementById('previewOverview').textContent = d.overview || 'No description available.';
+
+            const tmdb_id = d.tmdb_id || '';
+            const google_id = d.google_id || '';
+            let actions = '';
+            if (type === 'movie') {
+                actions = `<a href="/quick_add_movie?id=${tmdb_id}&status=to_watch" class="btn-preview-action to-watch"><i class="fas fa-clock"></i> Add to Watchlist</a>
+                           <a href="/quick_add_movie?id=${tmdb_id}&status=watched" class="btn-preview-action watched"><i class="fas fa-check"></i> Mark as Watched</a>`;
+            } else {
+                actions = `<a href="/quick_add_book?id=${google_id}&status=to_read" class="btn-preview-action to-read"><i class="fas fa-bookmark"></i> Add to Reading List</a>
+                           <a href="/quick_add_book?id=${google_id}&status=read" class="btn-preview-action read-done"><i class="fas fa-check"></i> Mark as Read</a>`;
+            }
+            document.getElementById('previewActions').innerHTML = actions;
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewContent').style.display = 'block';
+        })
+        .catch(() => {
+            document.getElementById('previewLoading').innerHTML = '<p style="color:var(--danger)">Failed to load details.</p>';
+        });
+}
+
+function closePreview(e) {
+    if (e && e.target !== document.getElementById('previewOverlay')) return;
+    document.getElementById('previewOverlay').classList.remove('active');
+}
+</script>
+{% endblock %}
